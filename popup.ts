@@ -19,7 +19,7 @@ function showStatus(elementId: string, message: string, isSuccess: boolean) {
 }
 
 /**
- * 显示 Cookie 信息
+ * 显示 localstorage 信息
  */
 function displayStorageInfo(storedInfo: StoredLocalStorageInfo | null) {
   const info = document.getElementById('cookieInfo');
@@ -32,7 +32,7 @@ function displayStorageInfo(storedInfo: StoredLocalStorageInfo | null) {
     return;
   }
 
-  // 显示 Cookie 列表
+  // 显示 localstorage 列表
   const data = storedInfo.data;
   list.innerHTML = '';
 
@@ -83,17 +83,11 @@ async function readLocalStorage() {
  */
 async function writeLocalStorage() {
   const btn = document.getElementById('writeBtn') as HTMLButtonElement;
-  const input = document.getElementById('targetDomain') as HTMLInputElement;
-  if (!btn || !input) return;
-  const targetDomain = input.value.trim();
-  if (!targetDomain) {
-    showStatus('writeStatus', '请输入目标网站域名', false);
-    return;
-  }
+  if (!btn) return;
   btn.disabled = true;
   btn.textContent = '写入中...';
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'writeLocalStorage', targetDomain }) as LocalStorageOperationResult;
+    const response = await chrome.runtime.sendMessage({ action: 'writeLocalStorage' }) as LocalStorageOperationResult;
     showStatus('writeStatus', response.message, response.success);
   } catch (e) {
     const msg = e instanceof Error ? e.message : '未知错误';
@@ -105,7 +99,7 @@ async function writeLocalStorage() {
 }
 
 /**
- * 加载已保存的 Cookie 信息
+ * 加载已保存的 localstorage 信息
  */
 async function loadStored() {
   try {
@@ -134,7 +128,7 @@ function init() {
     writeBtn.addEventListener('click', writeLocalStorage);
   }
 
-  // 加载已保存的 Cookie 信息
+  // 加载已保存的 localstorage 信息
   loadStored();
 }
 

@@ -61,9 +61,9 @@ async function readLocalStorageFromActiveTab(): Promise<LocalStorageOperationRes
 }
 
 /**
- * 在打开的目标站点标签页写入 localStorage（要求用户已打开目标站点）
+ * 将已保存的数据写入当前活动标签页的 localStorage
  */
-async function writeLocalStorageToTarget(targetDomain: string): Promise<LocalStorageOperationResult> {
+async function writeLocalStorageToActiveTab(): Promise<LocalStorageOperationResult> {
   try {
     const { localStorageData } = await chrome.storage.local.get('localStorageData');
     if (!localStorageData) {
@@ -76,18 +76,12 @@ async function writeLocalStorageToTarget(targetDomain: string): Promise<LocalSto
       return { success: false, message: 'localStorage 数据为空' };
     }
 
-    const normalizedTarget = targetDomain.startsWith('http') ? targetDomain : `https://${targetDomain}`;
-    const targetUrl = new URL(normalizedTarget);
-
-    // 仅对当前活动页注入，并校验域名匹配
+    // 仅对当前活动页注入
     const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!activeTab || !activeTab.id || !activeTab.url) {
       return { success: false, message: '未找到活动标签页' };
     }
-    const activeHost = new URL(activeTab.url).hostname;
-    if (!activeHost.endsWith(targetUrl.hostname)) {
-      return { success: false, message: `请在目标站点活动页执行，当前为 ${activeHost}` };
-    }
+    // 可选：如需限制必须是 HTTPS，或白名单域名，可在此添加校验
 
     const keys = Object.keys(data);
     const injection = await chrome.scripting.executeScript({
@@ -134,15 +128,7 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
   }
 
   if (message.action === 'writeLocalStorage') {
-    const targetDomain = message.targetDomain;
-    if (!targetDomain) {
-      sendResponse({
-        success: false,
-        message: '未提供目标域名'
-      });
-      return;
-    }
-    writeLocalStorageToTarget(targetDomain).then(result => {
+    writeLocalStorageToActiveTab().then(result => {
       sendResponse(result);
     });
     return true; // 保持消息通道开放
