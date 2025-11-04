@@ -1,152 +1,124 @@
-import { 
-  CookieData, StoredCookieInfo, 
-  CookieOperationResult, SOURCE_URL, 
-  REQUIRED_COOKIE_NAMES,
+import {
+  LocalStorageData,
+  StoredLocalStorageInfo,
+  LocalStorageOperationResult,
+  SOURCE_URL,
+  LOCAL_STORAGE_KEYS,
 } from './types.js';
 
+// 依赖 activeTab 权限，不进行运行时权限请求
+
 /**
- * 从源网站读取 Cookie
+ * 在当前活动标签页（应为源网站）读取指定 localStorage 键
  */
-async function readCookiesFromSource(): Promise<CookieOperationResult> {
+async function readLocalStorageFromActiveTab(): Promise<LocalStorageOperationResult> {
   try {
-    // 获取源网站的所有 Cookie
-    const cookies = await chrome.cookies.getAll({
-      url: SOURCE_URL
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, message: '未找到活动标签页', data: null };
+    }
+
+    const url = new URL(tab.url);
+    const source = new URL(SOURCE_URL);
+    if (url.hostname !== source.hostname) {
+      return { success: false, message: `请在源站点页面执行，当前为 ${url.hostname}` };
+    }
+
+    // activeTab 授权下，可直接对活动页注入脚本
+
+    const injection = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (keys: string[]) => {
+        const result: Record<string, string> = {};
+        for (const k of keys) {
+          const v = window.localStorage.getItem(k);
+          if (typeof v === 'string') result[k] = v;
+        }
+        return result;
+      },
+      args: [Array.from(LOCAL_STORAGE_KEYS)],
+      world: 'MAIN'
     });
 
-    if (!cookies || cookies.length === 0) {
-      return {
-        success: false,
-        message: '未找到任何 Cookie'
-      };
+    const data: LocalStorageData = (injection[0]?.result || {}) as LocalStorageData;
+    const foundKeys = Object.keys(data);
+    if (foundKeys.length === 0) {
+      return { success: false, message: `未找到以下键: ${Array.from(LOCAL_STORAGE_KEYS).join(', ')}`, data: null };
     }
 
-    // 提取需要的 Cookie 值
-    const cookieData: CookieData = {};
-    const foundCookies: string[] = [];
-
-    for (const cookie of cookies) {
-      const name = cookie.name.toLowerCase();
-      
-      // 检查是否是需要的 Cookie
-      if (REQUIRED_COOKIE_NAMES.some(req => req.toLowerCase() === name)) {
-        cookieData[cookie.name] = cookie.value;
-        foundCookies.push(cookie.name);
-      }
-    }
-
-    // 验证是否找到了必要的 Cookie
-    if (foundCookies.length === 0) {
-      return {
-        success: false,
-        message: `未找到以下 Cookie: ${REQUIRED_COOKIE_NAMES.join(', ')}`
-      };
-    }
-
-    // 保存到存储
-    const storedInfo: StoredCookieInfo = {
-      data: cookieData,
-      sourceDomain: new URL(SOURCE_URL).hostname,
+    const storedInfo: StoredLocalStorageInfo = {
+      data,
+      sourceDomain: url.hostname,
       timestamp: Date.now()
     };
+    await chrome.storage.local.set({ localStorageData: storedInfo });
 
-    await chrome.storage.local.set({ cookieData: storedInfo });
-
-    return {
-      success: true,
-      message: `成功读取 ${foundCookies.length} 个 Cookie: ${foundCookies.join(', ')}`,
-      data: storedInfo
-    };
+    return { success: true, message: `成功读取 ${foundKeys.length} 个键: ${foundKeys.join(', ')}`, data: storedInfo };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';
-    return {
-      success: false,
-      message: `读取 Cookie 失败: ${errorMessage}`
-    };
+    return { success: false, message: `读取 localStorage 失败: ${errorMessage}` };
   }
 }
 
 /**
- * 将 Cookie 写入目标网站
+ * 在打开的目标站点标签页写入 localStorage（要求用户已打开目标站点）
  */
-async function writeCookiesToTarget(targetDomain: string): Promise<CookieOperationResult> {
+async function writeLocalStorageToTarget(targetDomain: string): Promise<LocalStorageOperationResult> {
   try {
-    // 从存储中读取保存的 Cookie 数据
-    const result = await chrome.storage.local.get('cookieData');
-    
-    if (!result.cookieData) {
-      return {
-        success: false,
-        message: '未找到保存的 Cookie 数据，请先读取 Cookie'
-      };
+    const { localStorageData } = await chrome.storage.local.get('localStorageData');
+    if (!localStorageData) {
+      return { success: false, message: '未找到保存的数据，请先读取 localStorage' };
     }
 
-    const storedInfo: StoredCookieInfo = result.cookieData;
-    const cookieData = storedInfo.data;
-
-    if (!cookieData || Object.keys(cookieData).length === 0) {
-      return {
-        success: false,
-        message: 'Cookie 数据为空'
-      };
+    const storedInfo = localStorageData as StoredLocalStorageInfo;
+    const data = storedInfo.data as LocalStorageData;
+    if (!data || Object.keys(data).length === 0) {
+      return { success: false, message: 'localStorage 数据为空' };
     }
 
-    // 构建目标 URL
-    const targetUrl = targetDomain.startsWith('http') 
-      ? targetDomain 
-      : `https://${targetDomain}`;
+    const normalizedTarget = targetDomain.startsWith('http') ? targetDomain : `https://${targetDomain}`;
+    const targetUrl = new URL(normalizedTarget);
 
-    const targetUrlObj = new URL(targetUrl);
-    const domain = targetUrlObj.hostname;
-
-    // 写入每个 Cookie
-    const writeResults: string[] = [];
-    const errors: string[] = [];
-
-    for (const [name, value] of Object.entries(cookieData)) {
-      if (!value) continue;
-
-      try {
-        await chrome.cookies.set({
-          url: targetUrl,
-          name: name,
-          value: value,
-          domain: `.${domain}`, // 使用点开头允许子域名
-          path: '/',
-          secure: true,
-          httpOnly: false, // 大多数 Cookie 都可以通过 JS 访问
-          sameSite: 'lax'
-        });
-
-        writeResults.push(name);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '未知错误';
-        errors.push(`${name}: ${errorMessage}`);
-      }
+    // 仅对当前活动页注入，并校验域名匹配
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!activeTab || !activeTab.id || !activeTab.url) {
+      return { success: false, message: '未找到活动标签页' };
+    }
+    const activeHost = new URL(activeTab.url).hostname;
+    if (!activeHost.endsWith(targetUrl.hostname)) {
+      return { success: false, message: `请在目标站点活动页执行，当前为 ${activeHost}` };
     }
 
-    if (writeResults.length === 0) {
-      return {
-        success: false,
-        message: `写入 Cookie 失败: ${errors.join('; ')}`
-      };
-    }
+    const keys = Object.keys(data);
+    const injection = await chrome.scripting.executeScript({
+      target: { tabId: activeTab.id },
+      func: (entries: [string, string][]) => {
+        const okKeys: string[] = [];
+        const failKeys: string[] = [];
+        for (const [k, v] of entries) {
+          try {
+            window.localStorage.setItem(k, v);
+            okKeys.push(k);
+          } catch (e) {
+            failKeys.push(k);
+          }
+        }
+        return { ok: okKeys, fail: failKeys };
+      },
+      args: [keys.map(k => [k, data[k]!] as [string, string])],
+      world: 'MAIN'
+    });
 
-    const message = errors.length > 0
-      ? `成功写入 ${writeResults.length} 个 Cookie，${errors.length} 个失败: ${errors.join('; ')}`
-      : `成功写入 ${writeResults.length} 个 Cookie: ${writeResults.join(', ')}`;
+    const result = injection[0]?.result as { ok: string[]; fail: string[] } | undefined;
+    if (!result) return { success: false, message: '写入执行失败' };
 
-    return {
-      success: true,
-      message: message,
-      data: storedInfo
-    };
+    const msg = result.fail.length > 0
+      ? `成功写入 ${result.ok.length} 个键，失败 ${result.fail.length} 个: ${result.fail.join(', ')}`
+      : `成功写入 ${result.ok.length} 个键: ${result.ok.join(', ')}`;
+    return { success: true, message: msg, data: storedInfo };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';
-    return {
-      success: false,
-      message: `写入 Cookie 失败: ${errorMessage}`
-    };
+    return { success: false, message: `写入 localStorage 失败: ${errorMessage}` };
   }
 }
 
@@ -154,14 +126,14 @@ async function writeCookiesToTarget(targetDomain: string): Promise<CookieOperati
  * 监听来自 popup 或 content script 的消息
  */
 chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) => {
-  if (message.action === 'readCookies') {
-    readCookiesFromSource().then(result => {
+  if (message.action === 'readLocalStorage') {
+    readLocalStorageFromActiveTab().then(result => {
       sendResponse(result);
     });
     return true; // 保持消息通道开放
   }
 
-  if (message.action === 'writeCookies') {
+  if (message.action === 'writeLocalStorage') {
     const targetDomain = message.targetDomain;
     if (!targetDomain) {
       sendResponse({
@@ -170,18 +142,18 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
       });
       return;
     }
-    writeCookiesToTarget(targetDomain).then(result => {
+    writeLocalStorageToTarget(targetDomain).then(result => {
       sendResponse(result);
     });
     return true; // 保持消息通道开放
   }
 
-  if (message.action === 'getStoredCookies') {
-    chrome.storage.local.get('cookieData').then((result: { cookieData?: StoredCookieInfo }) => {
+  if (message.action === 'getStoredLocalStorage') {
+    chrome.storage.local.get('localStorageData').then((result: { localStorageData?: StoredLocalStorageInfo }) => {
       sendResponse({
         success: true,
-        data: result.cookieData || null,
-        message: result.cookieData ? '已找到保存的 Cookie 数据' : '未找到保存的 Cookie 数据'
+        data: result.localStorageData || null,
+        message: result.localStorageData ? '已找到保存的 localStorage 数据' : '未找到保存的 localStorage 数据'
       });
     });
     return true;
@@ -198,7 +170,7 @@ chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: chrome.tabs.TabCha
     try {
       const url = new URL(tab.url);
       if (url.hostname === new URL(SOURCE_URL).hostname) {
-        // 可以在这里添加自动读取逻辑（可选）
+        // 可选：自动读取 localStorage（默认仅提示）
         console.log('检测到源网站已加载:', tab.url);
       }
     } catch (error) {

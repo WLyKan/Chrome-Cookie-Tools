@@ -1,4 +1,4 @@
-import { StoredCookieInfo, CookieOperationResult } from './src/types.js';
+import { StoredLocalStorageInfo, LocalStorageOperationResult } from './src/types.js';
 
 /**
  * 显示状态消息
@@ -21,115 +21,101 @@ function showStatus(elementId: string, message: string, isSuccess: boolean) {
 /**
  * 显示 Cookie 信息
  */
-function displayCookieInfo(storedInfo: StoredCookieInfo | null) {
-  const cookieInfo = document.getElementById('cookieInfo');
-  const cookieList = document.getElementById('cookieList');
-  const cookieTimestamp = document.getElementById('cookieTimestamp');
-
-  if (!cookieInfo || !cookieList || !cookieTimestamp) return;
+function displayStorageInfo(storedInfo: StoredLocalStorageInfo | null) {
+  const info = document.getElementById('cookieInfo');
+  const list = document.getElementById('cookieList');
+  const ts = document.getElementById('cookieTimestamp');
+  if (!info || !list || !ts) return;
 
   if (!storedInfo || !storedInfo.data) {
-    cookieInfo.classList.remove('show');
+    info.classList.remove('show');
     return;
   }
 
   // 显示 Cookie 列表
-  const cookies = storedInfo.data;
-  cookieList.innerHTML = '';
+  const data = storedInfo.data;
+  list.innerHTML = '';
 
-  for (const [name, value] of Object.entries(cookies)) {
+  for (const [name, value] of Object.entries(data)) {
     const item = document.createElement('div');
     item.className = 'cookie-item';
     item.innerHTML = `<strong>${name}:</strong> ${value ? value.substring(0, 50) + (value.length > 50 ? '...' : '') : '(空)'}`;
-    cookieList.appendChild(item);
+    list.appendChild(item);
   }
 
   // 显示时间戳
   const date = new Date(storedInfo.timestamp);
-  cookieTimestamp.textContent = `保存时间: ${date.toLocaleString('zh-CN')}`;
+  ts.textContent = `保存时间: ${date.toLocaleString('zh-CN')}`;
 
-  cookieInfo.classList.add('show');
+  info.classList.add('show');
 }
 
 /**
  * 读取 Cookie
  */
-async function readCookies() {
-  const readBtn = document.getElementById('readBtn') as HTMLButtonElement;
-  if (!readBtn) return;
+async function readLocalStorage() {
+  const btn = document.getElementById('readBtn') as HTMLButtonElement;
+  if (!btn) return;
 
-  readBtn.disabled = true;
-  readBtn.textContent = '读取中...';
+  btn.disabled = true;
+  btn.textContent = '读取中...';
 
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'readCookies' }) as CookieOperationResult;
+    const response = await chrome.runtime.sendMessage({ action: 'readLocalStorage' }) as LocalStorageOperationResult;
 
     if (response.success && response.data) {
       showStatus('readStatus', response.message, true);
-      displayCookieInfo(response.data as StoredCookieInfo);
+      displayStorageInfo(response.data as StoredLocalStorageInfo);
     } else {
       showStatus('readStatus', response.message, false);
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
-    showStatus('readStatus', `读取失败: ${errorMessage}`, false);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '未知错误';
+    showStatus('readStatus', `读取失败: ${msg}`, false);
   } finally {
-    readBtn.disabled = false;
-    readBtn.textContent = '读取 Cookie';
+    btn.disabled = false;
+    btn.textContent = '读取 localStorage';
   }
 }
 
 /**
  * 写入 Cookie
  */
-async function writeCookies() {
-  const writeBtn = document.getElementById('writeBtn') as HTMLButtonElement;
-  const targetDomainInput = document.getElementById('targetDomain') as HTMLInputElement;
-
-  if (!writeBtn || !targetDomainInput) return;
-
-  const targetDomain = targetDomainInput.value.trim();
+async function writeLocalStorage() {
+  const btn = document.getElementById('writeBtn') as HTMLButtonElement;
+  const input = document.getElementById('targetDomain') as HTMLInputElement;
+  if (!btn || !input) return;
+  const targetDomain = input.value.trim();
   if (!targetDomain) {
     showStatus('writeStatus', '请输入目标网站域名', false);
     return;
   }
-
-  writeBtn.disabled = true;
-  writeBtn.textContent = '写入中...';
-
+  btn.disabled = true;
+  btn.textContent = '写入中...';
   try {
-    const response = await chrome.runtime.sendMessage({
-      action: 'writeCookies',
-      targetDomain: targetDomain
-    }) as CookieOperationResult;
-
+    const response = await chrome.runtime.sendMessage({ action: 'writeLocalStorage', targetDomain }) as LocalStorageOperationResult;
     showStatus('writeStatus', response.message, response.success);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
-    showStatus('writeStatus', `写入失败: ${errorMessage}`, false);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '未知错误';
+    showStatus('writeStatus', `写入失败: ${msg}`, false);
   } finally {
-    writeBtn.disabled = false;
-    writeBtn.textContent = '写入 Cookie';
+    btn.disabled = false;
+    btn.textContent = '写入 localStorage';
   }
 }
 
 /**
  * 加载已保存的 Cookie 信息
  */
-async function loadStoredCookies() {
+async function loadStored() {
   try {
-    const response = await chrome.runtime.sendMessage({ action: 'getStoredCookies' }) as {
-      success: boolean;
-      data: StoredCookieInfo | null;
-      message: string;
+    const response = await chrome.runtime.sendMessage({ action: 'getStoredLocalStorage' }) as {
+      success: boolean; data: StoredLocalStorageInfo | null; message: string;
     };
-
     if (response.success && response.data) {
-      displayCookieInfo(response.data);
+      displayStorageInfo(response.data);
     }
-  } catch (error) {
-    console.error('加载 Cookie 信息失败:', error);
-  }
+  } catch {}
 }
 
 /**
@@ -141,15 +127,15 @@ function init() {
   const writeBtn = document.getElementById('writeBtn');
 
   if (readBtn) {
-    readBtn.addEventListener('click', readCookies);
+    readBtn.addEventListener('click', readLocalStorage);
   }
 
   if (writeBtn) {
-    writeBtn.addEventListener('click', writeCookies);
+    writeBtn.addEventListener('click', writeLocalStorage);
   }
 
   // 加载已保存的 Cookie 信息
-  loadStoredCookies();
+  loadStored();
 }
 
 // 页面加载完成后初始化

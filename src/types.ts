@@ -1,23 +1,16 @@
 /**
- * Cookie 数据接口
+ * LocalStorage 键值对
  */
-export interface CookieData {
-  /** 刷新令牌 */
-  refreshtoken?: string;
-  /** 访问令牌 */
-  token?: string;
-  /** 租户 ID */
-  tenantId?: string;
-  /** 其他可能的 token 字段 */
-  [key: string]: string | undefined;
+export interface LocalStorageData {
+  [key: string]: string;
 }
 
 /**
- * 存储的 Cookie 信息
+ * 存储的 localStorage 信息
  */
-export interface StoredCookieInfo {
-  /** Cookie 数据 */
-  data: CookieData;
+export interface StoredLocalStorageInfo {
+  /** 数据 */
+  data: LocalStorageData;
   /** 源域名 */
   sourceDomain: string;
   /** 保存时间戳 */
@@ -25,24 +18,22 @@ export interface StoredCookieInfo {
 }
 
 /**
- * Cookie 操作结果
+ * 本地存储操作结果
  */
-export interface CookieOperationResult {
-  /** 是否成功 */
+export interface LocalStorageOperationResult {
   success: boolean;
-  /** 消息 */
   message: string;
-  /** 数据 */
-  data?: CookieData | StoredCookieInfo;
+  data?: LocalStorageData | StoredLocalStorageInfo | null;
 }
 
 /**
- * 需要读取的 Cookie 名称列表
+ * 需要读取的 localStorage 键名
  */
-export const REQUIRED_COOKIE_NAMES = [
-  'refreshtoken',
+export const LOCAL_STORAGE_KEYS = [
+  'refreshToken',
   'token',
-  'tenantId'
+  'tenantId',
+  'ACCESS_TOKEN'
 ] as const;
 
 /**

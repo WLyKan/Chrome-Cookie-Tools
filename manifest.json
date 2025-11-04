@@ -2,15 +2,19 @@
   "manifest_version": 3,
   "name": "Cookie Tools",
   "version": "1.0.0",
-  "description": "从指定网站读取 Cookie 并写入到目标网站",
+  "description": "从指定网站读取 localStorage 并写入到目标网站",
   "permissions": [
-    "cookies",
     "storage",
-    "tabs"
+    "tabs",
+    "scripting",
+    "activeTab"
   ],
   "host_permissions": [
-    "https://ai-dev.supcon.com/*",
-    "<all_urls>"
+    "https://ai-dev.supcon.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
     "service_worker": "dist/src/background.js",

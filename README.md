@@ -1,14 +1,14 @@
 # Chrome Cookie Tools
 
-一个 Chrome 浏览器插件，用于从指定网站读取 Cookie 并写入到目标网站。
+一个 Chrome 浏览器插件，用于从指定网站读取 localStorage 并写入到目标网站。
 
 ## 功能特性
 
-- ✅ 从 `https://ai-dev.supcon.com/agenthub/home` 读取 Cookie
-- ✅ 保存 Cookie 数据（refreshtoken, token, tenantId 等）
-- ✅ 将保存的 Cookie 写入到目标网站
+- ✅ 从 `https://ai-dev.supcon.com/agenthub/home` 读取 localStorage 指定键
+- ✅ 保存键值数据（refreshToken, token, tenantId 等）
+- ✅ 将保存的数据写入到目标网站的 localStorage
 - ✅ 友好的用户界面
-- ✅ 支持显示已保存的 Cookie 信息
+- ✅ 支持显示已保存的数据摘要
 
 ## 项目结构
 
@@ -51,20 +51,20 @@ npm run build
 ### 4. 使用插件
 
 1. 点击浏览器工具栏中的插件图标
-2. 在弹出窗口中点击"读取 Cookie"按钮，从源网站读取 Cookie
+2. 在弹出窗口中点击"读取 localStorage"按钮，从源网站读取指定键
 3. 在"目标网站域名"输入框中输入目标网站域名（例如：`example.com` 或 `https://example.com`）
-4. 点击"写入 Cookie"按钮，将 Cookie 写入目标网站
+4. 点击"写入 localStorage"按钮，将数据写入目标网站
 
 ## 配置说明
 
-### 需要读取的 Cookie
+### 需要读取的 localStorage 键
 
-默认读取以下 Cookie：
-- `refreshtoken`
+默认读取以下键：
+- `refreshToken`
 - `token`
 - `tenantId`
 
-如需修改，请编辑 `src/types.ts` 中的 `REQUIRED_COOKIE_NAMES` 数组。
+如需修改，请编辑 `src/types.ts` 中的 `LOCAL_STORAGE_KEYS` 数组。
 
 ### 源网站 URL
 
@@ -75,18 +75,18 @@ npm run build
 ## 注意事项
 
 1. **权限要求**：插件需要以下权限：
-   - `cookies` - 读取和写入 Cookie
-   - `storage` - 保存 Cookie 数据
-   - `tabs` - 监听标签页事件
+   - `storage` - 保存数据
+   - `tabs` - 查询标签页
+   - `scripting` - 在页面上下文执行脚本
+   - `activeTab` - 对当前活动标签页执行脚本
 
-2. **Cookie 写入限制**：
-   - Chrome 的安全策略可能会限制某些 Cookie 的写入
+2. **写入限制**：
+   - 必须先打开目标网站页面，才能在其上下文写入 localStorage
    - 确保目标网站域名格式正确
-   - 某些网站可能对 Cookie 有特殊要求（如 httpOnly、secure 等）
 
 3. **数据安全**：
-   - Cookie 数据存储在插件的本地存储中
-   - 请勿将包含敏感信息的 Cookie 分享给他人
+   - 数据存储在扩展的本地存储中
+   - 包含敏感信息的键值请谨慎处理
 
 ## 开发命令
 
@@ -96,16 +96,16 @@ npm run build
 
 ## 故障排除
 
-### 无法读取 Cookie
+### 无法读取 localStorage
 
-- 确保已访问源网站并登录
+- 确保已在源网站页面且为活动标签页
 - 检查浏览器控制台是否有错误信息
 - 确认插件权限已正确配置
 
-### 无法写入 Cookie
+### 无法写入 localStorage
 
 - 检查目标网站域名格式是否正确
-- 确认目标网站允许设置 Cookie
+- 确认已打开目标网站页面（需要在页面上下文写入）
 - 查看浏览器控制台的错误信息
 
 ## 许可证

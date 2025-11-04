@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cookie Tools</title>
+  <title>Storage Tools</title>
   <style>
     * {
       margin: 0;
@@ -155,30 +155,30 @@
 </head>
 <body>
   <div class="container">
-    <h1>Cookie 工具</h1>
+    <h1>localStorage 工具</h1>
 
     <div class="section">
-      <div class="section-title">读取 Cookie</div>
+      <div class="section-title">读取 localStorage</div>
       <div class="input-group">
         <label>源网站:</label>
         <input type="text" id="sourceUrl" value="https://ai-dev.supcon.com/agenthub/home" readonly>
       </div>
-      <button class="btn btn-primary" id="readBtn">读取 Cookie</button>
+      <button class="btn btn-primary" id="readBtn">读取 localStorage</button>
       <div class="status" id="readStatus"></div>
       <div class="cookie-info" id="cookieInfo">
-        <div class="section-title">已保存的 Cookie:</div>
+        <div class="section-title">已保存的键值:</div>
         <div id="cookieList"></div>
         <div class="timestamp" id="cookieTimestamp"></div>
       </div>
     </div>
 
     <div class="section">
-      <div class="section-title">写入 Cookie</div>
+      <div class="section-title">写入 localStorage</div>
       <div class="input-group">
         <label>目标网站域名:</label>
         <input type="text" id="targetDomain" placeholder="例如: example.com 或 https://example.com">
       </div>
-      <button class="btn btn-secondary" id="writeBtn">写入 Cookie</button>
+      <button class="btn btn-secondary" id="writeBtn">写入 localStorage</button>
       <div class="status" id="writeStatus"></div>
     </div>
   </div>
