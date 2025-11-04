@@ -177,6 +177,16 @@
       <button class="btn btn-secondary" id="writeBtn">写入 localStorage</button>
       <div class="status" id="writeStatus"></div>
     </div>
+
+    <div class="section">
+      <div class="section-title">配置读取键名</div>
+      <div class="input-group">
+        <label>键名（每行一个，或使用逗号分隔）</label>
+        <textarea id="keysInput" rows="5" style="width:100%; padding:8px 12px; border:1px solid #ddd; border-radius:4px; font-size:14px;"></textarea>
+      </div>
+      <button class="btn btn-primary" id="saveKeysBtn">保存配置</button>
+      <div class="status" id="saveKeysStatus"></div>
+    </div>
   </div>
 
   <script type="module" src="dist/popup.js"></script>

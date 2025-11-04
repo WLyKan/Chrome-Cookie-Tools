@@ -4,6 +4,8 @@ import {
   LocalStorageOperationResult,
   SOURCE_URL,
   LOCAL_STORAGE_KEYS,
+  ReadKeysConfig,
+  DEFAULT_READ_KEYS,
 } from './types.js';
 
 // 依赖 activeTab 权限，不进行运行时权限请求
@@ -24,6 +26,13 @@ async function readLocalStorageFromActiveTab(): Promise<LocalStorageOperationRes
       return { success: false, message: `请在源站点页面执行，当前为 ${url.hostname}` };
     }
 
+    // 读取配置的键名
+    const { readKeysConfig } = await chrome.storage.sync.get('readKeysConfig');
+    const cfg: ReadKeysConfig = readKeysConfig && Array.isArray(readKeysConfig.keys)
+      ? readKeysConfig as ReadKeysConfig
+      : DEFAULT_READ_KEYS;
+    const keysToRead: string[] = (cfg.keys && cfg.keys.length > 0) ? cfg.keys : Array.from(LOCAL_STORAGE_KEYS);
+
     // activeTab 授权下，可直接对活动页注入脚本
 
     const injection = await chrome.scripting.executeScript({
@@ -36,14 +45,14 @@ async function readLocalStorageFromActiveTab(): Promise<LocalStorageOperationRes
         }
         return result;
       },
-      args: [Array.from(LOCAL_STORAGE_KEYS)],
+      args: [keysToRead],
       world: 'MAIN'
     });
 
     const data: LocalStorageData = (injection[0]?.result || {}) as LocalStorageData;
     const foundKeys = Object.keys(data);
     if (foundKeys.length === 0) {
-      return { success: false, message: `未找到以下键: ${Array.from(LOCAL_STORAGE_KEYS).join(', ')}`, data: null };
+      return { success: false, message: `未找到以下键: ${keysToRead.join(', ')}`, data: null };
     }
 
     const storedInfo: StoredLocalStorageInfo = {
@@ -141,6 +150,34 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
         data: result.localStorageData || null,
         message: result.localStorageData ? '已找到保存的 localStorage 数据' : '未找到保存的 localStorage 数据'
       });
+    });
+    return true;
+  }
+
+  if (message.action === 'getReadKeysConfig') {
+    chrome.storage.sync.get('readKeysConfig').then((result: { readKeysConfig?: ReadKeysConfig }) => {
+      const cfg = result.readKeysConfig && Array.isArray(result.readKeysConfig.keys)
+        ? result.readKeysConfig as ReadKeysConfig
+        : DEFAULT_READ_KEYS;
+      sendResponse({ success: true, data: cfg, message: 'OK' });
+    });
+    return true;
+  }
+
+  if (message.action === 'saveReadKeysConfig') {
+    const keys: unknown = message.keys;
+    const arr = Array.isArray(keys) ? keys : [];
+    const normalized = Array.from(new Set(
+      arr
+        .map(k => (typeof k === 'string' ? k.trim() : ''))
+        .filter(k => k.length > 0)
+    ));
+    const cfg: ReadKeysConfig = { keys: normalized.length > 0 ? normalized : DEFAULT_READ_KEYS.keys, updatedAt: Date.now() };
+    chrome.storage.sync.set({ readKeysConfig: cfg }).then(() => {
+      sendResponse({ success: true, message: '保存成功', data: cfg });
+    }).catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : '保存失败';
+      sendResponse({ success: false, message: msg });
     });
     return true;
   }

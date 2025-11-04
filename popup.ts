@@ -1,4 +1,4 @@
-import { StoredLocalStorageInfo, LocalStorageOperationResult } from './src/types.js';
+import { StoredLocalStorageInfo, LocalStorageOperationResult, ReadKeysConfig } from './src/types.js';
 
 /**
  * 显示状态消息
@@ -109,7 +109,40 @@ async function loadStored() {
     if (response.success && response.data) {
       displayStorageInfo(response.data);
     }
+    // 加载键名配置
+    const cfg = await chrome.runtime.sendMessage({ action: 'getReadKeysConfig' }) as {
+      success: boolean; data: ReadKeysConfig; message: string;
+    };
+    if (cfg.success && cfg.data) {
+      const keysInput = document.getElementById('keysInput') as HTMLTextAreaElement | null;
+      if (keysInput) {
+        keysInput.value = cfg.data.keys.join('\n');
+      }
+    }
   } catch {}
+}
+
+async function saveKeys() {
+  const btn = document.getElementById('saveKeysBtn') as HTMLButtonElement | null;
+  const keysInput = document.getElementById('keysInput') as HTMLTextAreaElement | null;
+  if (!btn || !keysInput) return;
+  btn.disabled = true;
+  btn.textContent = '保存中...';
+  try {
+    const raw = keysInput.value || '';
+    const keys = raw
+      .split(/\n|,|;|\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    const res = await chrome.runtime.sendMessage({ action: 'saveReadKeysConfig', keys });
+    showStatus('saveKeysStatus', res?.message || '已保存', !!res?.success);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '未知错误';
+    showStatus('saveKeysStatus', `保存失败: ${msg}`, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存配置';
+  }
 }
 
 /**
@@ -119,6 +152,7 @@ function init() {
   // 绑定按钮事件
   const readBtn = document.getElementById('readBtn');
   const writeBtn = document.getElementById('writeBtn');
+  const saveKeysBtn = document.getElementById('saveKeysBtn');
 
   if (readBtn) {
     readBtn.addEventListener('click', readLocalStorage);
@@ -126,6 +160,9 @@ function init() {
 
   if (writeBtn) {
     writeBtn.addEventListener('click', writeLocalStorage);
+  }
+  if (saveKeysBtn) {
+    saveKeysBtn.addEventListener('click', saveKeys);
   }
 
   // 加载已保存的 localstorage 信息

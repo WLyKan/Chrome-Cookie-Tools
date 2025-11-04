@@ -27,14 +27,25 @@ export interface LocalStorageOperationResult {
 }
 
 /**
- * 需要读取的 localStorage 键名
+ * 需要读取的 localStorage 键名（兼容默认值，后续由用户配置覆盖）
  */
 export const LOCAL_STORAGE_KEYS = [
-  'refreshToken',
+  'refreshtoken',
   'token',
-  'tenantId',
-  'ACCESS_TOKEN'
+  'tenantId'
 ] as const;
+
+/** 键名配置 */
+export interface ReadKeysConfig {
+  keys: string[];
+  updatedAt: number;
+}
+
+/** 默认键名配置（用于首次或缺省） */
+export const DEFAULT_READ_KEYS: ReadKeysConfig = {
+  keys: ['refreshtoken', 'token', 'tenantId'],
+  updatedAt: 0,
+};
 
 /**
  * 源网站 URL
