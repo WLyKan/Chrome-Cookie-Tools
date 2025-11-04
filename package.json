@@ -1,0 +1,21 @@
+{
+  "name": "chrome-cookie-tools",
+  "version": "1.0.0",
+  "description": "从指定网站读取 Cookie 并写入到目标网站",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "chrome",
+    "extension",
+    "cookie"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "typescript": "^5.3.3"
+  }
+}
