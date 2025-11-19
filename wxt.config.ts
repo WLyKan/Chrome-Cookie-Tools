@@ -21,6 +21,8 @@ export default defineConfig({
       "tabs",
       "scripting",
       "activeTab",
+      "cookies",
     ],
+    host_permissions: ["<all_urls>"],
   },
 });

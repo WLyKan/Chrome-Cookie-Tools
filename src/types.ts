@@ -1,51 +1,50 @@
 /**
- * LocalStorage 键值对
+ * Cookie 数据类型
  */
-export interface LocalStorageData {
-  [key: string]: string;
+export interface CookieData {
+  name: string;
+  value: string;
+  domain?: string;
+  path?: string;
+  secure?: boolean;
+  httpOnly?: boolean;
+  sameSite?: chrome.cookies.SameSiteStatus;
+  expirationDate?: number;
 }
 
 /**
- * 存储的 localStorage 信息
+ * Cookie 配置
  */
-export interface StoredLocalStorageInfo {
-  /** 数据 */
-  data: LocalStorageData;
-  /** 源域名 */
-  sourceDomain: string;
-  /** 保存时间戳 */
-  timestamp: number;
-}
-
-/**
- * 本地存储操作结果
- */
-export interface LocalStorageOperationResult {
-  success: boolean;
-  message: string;
-  data?: LocalStorageData | StoredLocalStorageInfo | null;
-}
-
-/**
- * 需要读取的 localStorage 键名（兼容默认值，后续由用户配置覆盖）
- */
-export const LOCAL_STORAGE_KEYS = [
-  'refreshtoken',
-  'token',
-  'tenantId'
-] as const;
-
-/** 键名配置 */
-export interface ReadKeysConfig {
-  keys: string[];
+export interface CookieConfig {
+  /** 源网站 URL */
+  sourceUrl: string;
+  /** 需要读取的 Cookie 名称列表 */
+  cookieNames: string[];
+  /** 更新时间戳 */
   updatedAt: number;
 }
 
-/** 默认键名配置（用于首次或缺省） */
-export const DEFAULT_READ_KEYS: ReadKeysConfig = {
-  keys: ['refreshtoken', 'token', 'tenantId'],
-  updatedAt: 0,
-};
+/**
+ * Cookie 操作结果
+ */
+export interface CookieOperationResult {
+  success: boolean;
+  message: string;
+  data?: CookieData[];
+  error?: string;
+}
+
+/**
+ * 存储的 Cookie 信息
+ */
+export interface StoredCookieInfo {
+  /** Cookie 数据 */
+  cookies: CookieData[];
+  /** 源网站 URL */
+  sourceUrl: string;
+  /** 保存时间戳 */
+  timestamp: number;
+}
 
 /**
  * 源网站 URL 配置
@@ -68,7 +67,71 @@ export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
   updatedAt: 0,
 };
 
+/** 默认 Cookie 配置 */
+export const DEFAULT_COOKIE_CONFIG: CookieConfig = {
+  sourceUrl: DEFAULT_SOURCE_URL,
+  cookieNames: ['sessionId', 'token', 'userId'],
+  updatedAt: 0,
+};
+
 /**
- * 目标网站域名（需要用户配置）
+ * Popup 标签页类型
  */
-export const TARGET_DOMAIN = ''; // 待配置
+export type TabType = 'config' | 'operation';
+
+/**
+ * 消息类型定义
+ */
+export enum MessageType {
+  READ_COOKIES = 'READ_COOKIES',
+  WRITE_COOKIES = 'WRITE_COOKIES',
+  GET_CONFIG = 'GET_CONFIG',
+  SAVE_CONFIG = 'SAVE_CONFIG',
+}
+
+/**
+ * 消息请求基础接口
+ */
+export interface MessageRequest {
+  type: MessageType;
+  payload?: any;
+}
+
+/**
+ * 读取 Cookie 请求
+ */
+export interface ReadCookiesRequest extends MessageRequest {
+  type: MessageType.READ_COOKIES;
+  payload: {
+    sourceUrl: string;
+    cookieNames: string[];
+  };
+}
+
+/**
+ * 写入 Cookie 请求
+ */
+export interface WriteCookiesRequest extends MessageRequest {
+  type: MessageType.WRITE_COOKIES;
+  payload: {
+    targetUrl: string;
+    cookies: CookieData[];
+  };
+}
+
+/**
+ * 保存配置请求
+ */
+export interface SaveConfigRequest extends MessageRequest {
+  type: MessageType.SAVE_CONFIG;
+  payload: CookieConfig;
+}
+
+/**
+ * 消息响应
+ */
+export interface MessageResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}

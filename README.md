@@ -2,119 +2,129 @@
 
 This template should help get you started developing with React in WXT.
 
-# Chrome Cookie Tools
+# Cookie Tools
 
-一个 Chrome 浏览器插件，用于从指定网站读取 localStorage 并写入到目标网站。
+一个浏览器扩展工具，用于从源网站读取Cookie并写入到目标网站。
 
 ## 功能特性
 
-- ✅ 从 `https://ai-dev.supcon.com/agenthub/home` 读取 localStorage 指定键
-- ✅ 保存键值数据（refreshToken, token, tenantId 等）
-- ✅ 将保存的数据写入到目标网站的 localStorage
-- ✅ 友好的用户界面
-- ✅ 支持显示已保存的数据摘要
+- 📋 **配置管理**：自定义源网站URL和需要读取的Cookie名称
+- 📖 **Cookie读取**：从指定源网站读取指定的Cookie
+- ✍️ **Cookie写入**：将读取的Cookie写入到目标网站
+- 🕒 **历史记录**：保存最近5个源网站URL，方便快速切换
+- 🎨 **现代UI**：使用React + Tailwind CSS构建的美观界面
+- 🔒 **权限管理**：动态请求网站访问权限，安全可控
+
+## 技术栈
+
+- [WXT](https://wxt.dev) - Web扩展开发框架
+- [TypeScript](https://www.typescriptlang.org) - 类型安全
+- [React](https://reactjs.org) - UI框架
+- [Tailwind CSS](https://tailwindcss.com) - 样式框架
+- [Lucide React](https://lucide.dev) - 图标库
 
 ## 项目结构
 
 ```
-chrome-cookie-tools/
-├── manifest.json          # Chrome 插件配置文件
-├── popup.html            # 弹出窗口界面
-├── popup.ts              # 弹出窗口逻辑
-├── src/
-│   ├── types.ts          # TypeScript 类型定义
-│   └── background.ts     # Service Worker 后台脚本
-├── dist/                 # 编译输出目录（构建后生成）
-├── icons/                # 插件图标（需要添加）
-├── tsconfig.json         # TypeScript 配置
-└── package.json          # 项目依赖配置
+src/
+├── entrypoints/          # 扩展入口点
+│   ├── popup/           # Popup页面
+│   │   ├── App.tsx      # 主应用组件
+│   │   ├── ConfigTab.tsx    # 配置页面
+│   │   ├── OperationTab.tsx # 操作页面
+│   │   └── index.html   # HTML入口
+│   └── background.ts    # Background Service Worker
+├── components/ui/       # UI组件
+│   ├── tabs.tsx
+│   ├── button.tsx
+│   ├── input.tsx
+│   ├── label.tsx
+│   └── card.tsx
+├── lib/                 # 工具函数
+│   └── utils.ts
+└── types.ts            # TypeScript类型定义
 ```
 
-## 开发步骤
+### 开发指南
 
-### 1. 安装依赖
+### 环境要求
+
+- Node.js 18+
+- pnpm 8+
+
+### 开发命令
 
 ```bash
-npm install
+# 安装依赖
+pnpm install
+
+# 启动开发服务器（Chrome）
+pnpm dev
+
+# 启动开发服务器（Firefox）
+pnpm dev:firefox
+
+# 安装 shadcn 组件
+pnpm dlx shadcn@latest add [组件名]
+
+# 类型检查
+pnpm compile
+
+# 构建生产版本
+pnpm build
+
+# 构建Firefox版本
+pnpm build:firefox
+
+# 打包扩展
+pnpm zip
 ```
 
-### 2. 开发/构建项目
+### 加载开发版本
 
-```bash
-# 安装shadcn组件
-pnpm dlx shadcn@latest add button
+1. 运行 `pnpm dev`
+2. 打开 `chrome://extensions/`
+3. 开启「开发者模式」
+4. 点击「加载已解压的扩展程序」
+5. 选择 `.output/chrome-mv3` 目录
 
+## 使用说明
 
-npm run build
-```
+### 1. 配置Cookie读取
 
-### 3. 加载插件到 Chrome
+1. 点击扩展图标打开Popup
+2. 切换到「配置」标签页
+3. 输入源网站URL（例如：`https://example.com`）
+4. 添加需要读取的Cookie名称（例如：`sessionId`、`token`等）
+5. 点击「保存配置」
 
-1. 打开 Chrome 浏览器
-2. 访问 `chrome://extensions/`
-3. 开启"开发者模式"
-4. 点击"加载已解压的扩展程序"
-5. 选择项目根目录（包含 `manifest.json` 的目录）
+### 2. 读取Cookie
 
-### 4. 使用插件
+1. 切换到「操作」标签页
+2. 点击「读取Cookie」按钮
+3. 如果需要权限，会弹出授权提示
+4. 读取成功后，Cookie数据会显示在预览区域
 
-1. 点击浏览器工具栏中的插件图标
-2. 在弹出窗口中点击"读取 localStorage"按钮，从源网站读取指定键
-3. 在"目标网站域名"输入框中输入目标网站域名（例如：`example.com` 或 `https://example.com`）
-4. 点击"写入 localStorage"按钮，将数据写入目标网站
+### 3. 写入Cookie
 
-## 配置说明
+1. 在「目标网站URL」输入框输入目标网站（例如：`https://target.com`）
+2. 点击「写入Cookie」按钮
+3. Cookie会被写入到目标网站
+4. 可以访问目标网站验证Cookie是否写入成功
 
-### 需要读取的 localStorage 键
+## 权限说明
 
-默认读取以下键：
-- `refreshToken`
-- `token`
-- `tenantId`
+此扩展需要以下权限：
 
-如需修改，请编辑 `src/types.ts` 中的 `LOCAL_STORAGE_KEYS` 数组。
+- `storage` - 保存配置和Cookie数据
+- `cookies` - 读取和写入Cookie
+- `tabs` - 获取当前标签页信息
+- `activeTab` - 访问当前活动标签页
+- `<all_urls>` - 访问用户授权的网站（按需请求）
 
-### 源网站 URL
+## 测试
 
-默认源网站：`https://ai-dev.supcon.com/agenthub/home`
-
-如需修改，请编辑 `src/types.ts` 中的 `SOURCE_URL` 常量。
-
-## 注意事项
-
-1. **权限要求**：插件需要以下权限：
-   - `storage` - 保存数据
-   - `tabs` - 查询标签页
-   - `scripting` - 在页面上下文执行脚本
-   - `activeTab` - 对当前活动标签页执行脚本
-
-2. **写入限制**：
-   - 必须先打开目标网站页面，才能在其上下文写入 localStorage
-   - 确保目标网站域名格式正确
-
-3. **数据安全**：
-   - 数据存储在扩展的本地存储中
-   - 包含敏感信息的键值请谨慎处理
-
-## 开发命令
-
-- `npm run build` - 编译 TypeScript 代码
-- `npm run watch` - 监听文件变化并自动编译
-- `npm run clean` - 清理编译输出目录
-
-## 故障排除
-
-### 无法读取 localStorage
-
-- 确保已在源网站页面且为活动标签页
-- 检查浏览器控制台是否有错误信息
-- 确认插件权限已正确配置
-
-### 无法写入 localStorage
-
-- 检查目标网站域名格式是否正确
-- 确认已打开目标网站页面（需要在页面上下文写入）
-- 查看浏览器控制台的错误信息
+请参考 [test-checklist.md](./test-checklist.md) 进行完整的功能测试。
 
 ## 许可证
 
