@@ -2,10 +2,12 @@ import {
   LocalStorageData,
   StoredLocalStorageInfo,
   LocalStorageOperationResult,
-  SOURCE_URL,
+  DEFAULT_SOURCE_URL,
   LOCAL_STORAGE_KEYS,
   ReadKeysConfig,
   DEFAULT_READ_KEYS,
+  SourceUrlConfig,
+  DEFAULT_SOURCE_URL_CONFIG,
 } from './types.js';
 
 // 依赖 activeTab 权限，不进行运行时权限请求
@@ -20,18 +22,23 @@ async function readLocalStorageFromActiveTab(): Promise<LocalStorageOperationRes
       return { success: false, message: '未找到活动标签页', data: null };
     }
 
+    // 获取当前配置的源网站 URL
+    const { sourceUrlConfig } = await chrome.storage.sync.get('sourceUrlConfig');
+    const cfg: SourceUrlConfig = sourceUrlConfig || DEFAULT_SOURCE_URL_CONFIG;
+    const sourceUrl = cfg.current || DEFAULT_SOURCE_URL;
+
     const url = new URL(tab.url);
-    const source = new URL(SOURCE_URL);
+    const source = new URL(sourceUrl);
     if (url.hostname !== source.hostname) {
-      return { success: false, message: `请在源站点页面执行，当前为 ${url.hostname}` };
+      return { success: false, message: `请在源站点页面执行，当前为 ${url.hostname}，期望为 ${source.hostname}` };
     }
 
     // 读取配置的键名
     const { readKeysConfig } = await chrome.storage.sync.get('readKeysConfig');
-    const cfg: ReadKeysConfig = readKeysConfig && Array.isArray(readKeysConfig.keys)
+    const keysCfg: ReadKeysConfig = readKeysConfig && Array.isArray(readKeysConfig.keys)
       ? readKeysConfig as ReadKeysConfig
       : DEFAULT_READ_KEYS;
-    const keysToRead: string[] = (cfg.keys && cfg.keys.length > 0) ? cfg.keys : Array.from(LOCAL_STORAGE_KEYS);
+    const keysToRead: string[] = (keysCfg.keys && keysCfg.keys.length > 0) ? keysCfg.keys : Array.from(LOCAL_STORAGE_KEYS);
 
     // activeTab 授权下，可直接对活动页注入脚本
 
@@ -182,6 +189,54 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
     return true;
   }
 
+  if (message.action === 'getSourceUrlConfig') {
+    chrome.storage.sync.get('sourceUrlConfig').then((result: { sourceUrlConfig?: SourceUrlConfig }) => {
+      const cfg = result.sourceUrlConfig || DEFAULT_SOURCE_URL_CONFIG;
+      sendResponse({ success: true, data: cfg, message: 'OK' });
+    });
+    return true;
+  }
+
+  if (message.action === 'saveSourceUrlConfig') {
+    const url: unknown = message.url;
+    if (typeof url !== 'string' || url.trim().length === 0) {
+      sendResponse({ success: false, message: '无效的 URL' });
+      return true;
+    }
+
+    // 验证 URL 格式
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url.trim());
+    } catch {
+      sendResponse({ success: false, message: 'URL 格式错误，请输入完整的 URL（如 https://example.com）' });
+      return true;
+    }
+
+    // 获取现有配置
+    chrome.storage.sync.get('sourceUrlConfig').then((result: { sourceUrlConfig?: SourceUrlConfig }) => {
+      const oldCfg = result.sourceUrlConfig || DEFAULT_SOURCE_URL_CONFIG;
+      const newUrl = parsedUrl.href;
+      
+      // 更新历史记录（去重并限制为5个）
+      const history = [newUrl, ...oldCfg.history.filter(u => u !== newUrl)].slice(0, 5);
+      
+      const cfg: SourceUrlConfig = {
+        current: newUrl,
+        history,
+        updatedAt: Date.now()
+      };
+
+      chrome.storage.sync.set({ sourceUrlConfig: cfg }).then(() => {
+        sendResponse({ success: true, message: '保存成功', data: cfg });
+      }).catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : '保存失败';
+        sendResponse({ success: false, message: msg });
+      });
+    });
+    return true;
+  }
+
   return false;
 });
 
@@ -190,14 +245,19 @@ chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.Messa
  */
 chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
   if (changeInfo.status === 'complete' && tab.url) {
-    try {
-      const url = new URL(tab.url);
-      if (url.hostname === new URL(SOURCE_URL).hostname) {
-        // 可选：自动读取 localStorage（默认仅提示）
-        console.log('检测到源网站已加载:', tab.url);
+    chrome.storage.sync.get('sourceUrlConfig').then((result: { sourceUrlConfig?: SourceUrlConfig }) => {
+      const cfg = result.sourceUrlConfig || DEFAULT_SOURCE_URL_CONFIG;
+      const sourceUrl = cfg.current || DEFAULT_SOURCE_URL;
+      try {
+        const url = new URL(tab.url!);
+        const source = new URL(sourceUrl);
+        if (url.hostname === source.hostname) {
+          // 可选：自动读取 localStorage（默认仅提示）
+          console.log('检测到源网站已加载:', tab.url);
+        }
+      } catch (error) {
+        // URL 解析失败，忽略
       }
-    } catch (error) {
-      // URL 解析失败，忽略
-    }
+    });
   }
 });

@@ -1,3 +1,7 @@
+# WXT + React
+
+This template should help get you started developing with React in WXT.
+
 # Chrome Cookie Tools
 
 一个 Chrome 浏览器插件，用于从指定网站读取 localStorage 并写入到目标网站。
@@ -34,9 +38,13 @@ chrome-cookie-tools/
 npm install
 ```
 
-### 2. 构建项目
+### 2. 开发/构建项目
 
 ```bash
+# 安装shadcn组件
+pnpm dlx shadcn@latest add button
+
+
 npm run build
 ```
 

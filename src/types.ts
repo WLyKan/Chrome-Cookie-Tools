@@ -48,9 +48,25 @@ export const DEFAULT_READ_KEYS: ReadKeysConfig = {
 };
 
 /**
- * 源网站 URL
+ * 源网站 URL 配置
  */
-export const SOURCE_URL = 'https://ai-dev.supcon.com/agenthub/home';
+export interface SourceUrlConfig {
+  /** 当前使用的源网站 URL */
+  current: string;
+  /** 历史记录（最多保留5个） */
+  history: string[];
+  updatedAt: number;
+}
+
+/** 默认源网站 URL */
+export const DEFAULT_SOURCE_URL = 'https://ai-dev.supcon.com/agenthub/home';
+
+/** 默认源网站配置 */
+export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
+  current: DEFAULT_SOURCE_URL,
+  history: [DEFAULT_SOURCE_URL],
+  updatedAt: 0,
+};
 
 /**
  * 目标网站域名（需要用户配置）
