@@ -7,6 +7,7 @@ import type {
   CookieData,
   CookieConfig,
   StoredCookieInfo,
+  HistoryItem,
 } from "@/types";
 import { DEFAULT_COOKIE_CONFIG } from "@/types";
 
@@ -58,18 +59,31 @@ async function handleReadCookies(
   const { sourceUrl, cookieNames } = request.payload;
 
   try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, error: '未找到活动标签页' };
+    }
     // 验证URL
     const url = new URL(sourceUrl);
+    const currentUrl = new URL(tab.url);
+
+    if (url.hostname !== currentUrl.hostname) {
+      return { success: false, error: `请在源站点（${url.hostname}）页面执行 ` };
+    }
+
     const domain = url.hostname;
 
     // 检查权限
     const hasPermission = await browser.permissions.contains({
+      permissions: ["cookies"],
       origins: [`${url.protocol}//${domain}/*`],
     });
 
     if (!hasPermission) {
       // 请求权限
       const granted = await browser.permissions.request({
+        permissions: ["cookies"],
         origins: [`${url.protocol}//${domain}/*`],
       });
 
@@ -266,7 +280,7 @@ async function handleSaveConfig(
     await browser.storage.sync.set({ cookieConfig: config });
 
     // 更新历史记录
-    await updateUrlHistory(config.sourceUrl);
+    await updateUrlHistory(config.sourceUrl, config.cookieNames);
 
     return {
       success: true,
@@ -282,18 +296,23 @@ async function handleSaveConfig(
 }
 
 /**
- * 更新URL历史记录（最多保留5条）
+ * 更新URL历史记录（最多保留5条，同时保存URL和Cookie名称）
  */
-async function updateUrlHistory(url: string): Promise<void> {
+async function updateUrlHistory(url: string, cookieNames: string[]): Promise<void> {
   try {
     const result = await browser.storage.sync.get("urlHistory");
-    let history: string[] = result.urlHistory || [];
+    let history: HistoryItem[] = result.urlHistory || [];
 
-    // 移除重复项
-    history = history.filter((item) => item !== url);
+    // 移除重复项（相同URL）
+    history = history.filter((item) => item.url !== url);
 
     // 添加到开头
-    history.unshift(url);
+    const newItem: HistoryItem = {
+      url,
+      cookieNames,
+      timestamp: Date.now(),
+    };
+    history.unshift(newItem);
 
     // 只保留最近5条
     history = history.slice(0, 5);

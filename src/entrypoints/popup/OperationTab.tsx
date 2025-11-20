@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CookieConfig, CookieData } from "@/types";
@@ -9,13 +8,14 @@ import { Download, Upload, Cookie } from "lucide-react";
 
 export function OperationTab() {
   const [config, setConfig] = useState<CookieConfig | null>(null);
-  const [targetUrl, setTargetUrl] = useState("");
+  const [currentTab, setCurrentTab] = useState<{ url: string; title: string } | null>(null);
   const [cookies, setCookies] = useState<CookieData[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error" | "info"; text: string } | null>(null);
 
   useEffect(() => {
     loadConfig();
+    getCurrentTab();
   }, []);
 
   const loadConfig = async () => {
@@ -32,9 +32,23 @@ export function OperationTab() {
     }
   };
 
+  const getCurrentTab = async () => {
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url) {
+        setCurrentTab({
+          url: tab.url,
+          title: tab.title || new URL(tab.url).hostname,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to get current tab:", error);
+    }
+  };
+
   const handleReadCookies = async () => {
     if (!config) {
-      setMessage({ type: "error", text: "请先在配置页设置源网站和Cookie名称" });
+      setMessage({ type: "error", text: "请先设置源网站和需要获取的Cookie名称" });
       return;
     }
 
@@ -75,8 +89,8 @@ export function OperationTab() {
       return;
     }
 
-    if (!targetUrl.trim()) {
-      setMessage({ type: "error", text: "请输入目标网站URL" });
+    if (!currentTab || !currentTab.url) {
+      setMessage({ type: "error", text: "无法获取当前标签页信息" });
       return;
     }
 
@@ -87,13 +101,13 @@ export function OperationTab() {
       const response = await browser.runtime.sendMessage({
         type: MessageType.WRITE_COOKIES,
         payload: {
-          targetUrl: targetUrl.trim(),
+          targetUrl: currentTab.url,
           cookies,
         },
       });
 
       if (response.success) {
-        setMessage({ type: "success", text: `成功写入 ${response.data} 个Cookie` });
+        setMessage({ type: "success", text: `成功写入 ${response.data} 个Cookie到当前标签页` });
       } else {
         setMessage({ type: "error", text: response.error || "写入Cookie失败" });
       }
@@ -138,17 +152,17 @@ export function OperationTab() {
         {cookies.length > 0 && (
           <div className="space-y-2">
             <Label>Cookie数据 ({cookies.length})</Label>
-            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md">
+            <div className="max-h-40 overflow-y-auto border border-border rounded-md">
               {cookies.map((cookie, index) => (
                 <div
                   key={index}
-                  className="p-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                  className="p-2 border-b border-border last:border-b-0 hover:bg-muted/50"
                 >
                   <div className="flex items-center gap-2">
-                    <Cookie className="h-3 w-3 text-gray-400" />
+                    <Cookie className="h-3 w-3 text-muted-foreground" />
                     <span className="font-medium text-sm">{cookie.name}</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1 truncate pl-5">
+                  <div className="text-xs text-muted-foreground mt-1 truncate pl-5">
                     {cookie.value.substring(0, 50)}
                     {cookie.value.length > 50 ? "..." : ""}
                   </div>
@@ -158,28 +172,16 @@ export function OperationTab() {
           </div>
         )}
 
-        {/* 目标URL */}
-        <div className="space-y-2">
-          <Label htmlFor="targetUrl">目标网站URL</Label>
-          <Input
-            id="targetUrl"
-            type="url"
-            placeholder="https://target.com"
-            value={targetUrl}
-            onChange={(e) => setTargetUrl(e.target.value)}
-          />
-        </div>
-
         {/* 写入Cookie */}
         <div className="space-y-2">
           <Button
             onClick={handleWriteCookies}
-            disabled={loading || cookies.length === 0}
+            disabled={loading || cookies.length === 0 || !currentTab}
             className="w-full"
             variant="default"
           >
             <Upload className="h-4 w-4 mr-2" />
-            {loading ? "写入中..." : "写入Cookie"}
+            {loading ? "写入中..." : "写入Cookie到当前标签页"}
           </Button>
         </div>
 
@@ -188,10 +190,10 @@ export function OperationTab() {
           <div
             className={`p-3 rounded text-sm ${
               message.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
+                ? "bg-green-50 text-green-800 border border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800"
                 : message.type === "error"
-                ? "bg-red-50 text-red-800 border border-red-200"
-                : "bg-blue-50 text-blue-800 border border-blue-200"
+                ? "bg-red-50 text-red-800 border border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800"
+                : "bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950 dark:text-blue-200 dark:border-blue-800"
             }`}
           >
             {message.text}

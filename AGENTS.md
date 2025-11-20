@@ -1,5 +1,8 @@
 # Repository Guidelines
 
+## 基础要求
+总是使用中文回答。
+
 ## 技术栈
 - [WXT](https://wxt.dev) - A framework for building web extensions.
 - [TypeScript](https://www.typescriptlang.org) - A superset of JavaScript with static typing.

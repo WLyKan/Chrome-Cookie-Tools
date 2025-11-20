@@ -47,6 +47,18 @@ export interface StoredCookieInfo {
 }
 
 /**
+ * 历史记录项
+ */
+export interface HistoryItem {
+  /** 源网站 URL */
+  url: string;
+  /** Cookie 名称列表 */
+  cookieNames: string[];
+  /** 保存时间戳 */
+  timestamp: number;
+}
+
+/**
  * 源网站 URL 配置
  */
 export interface SourceUrlConfig {
@@ -70,7 +82,7 @@ export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
 /** 默认 Cookie 配置 */
 export const DEFAULT_COOKIE_CONFIG: CookieConfig = {
   sourceUrl: DEFAULT_SOURCE_URL,
-  cookieNames: ['sessionId', 'token', 'userId'],
+  cookieNames: ['refreshtoken', 'token', 'tenantId'],
   updatedAt: 0,
 };
 

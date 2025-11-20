@@ -8,15 +8,15 @@ function App() {
   const [activeTab, setActiveTab] = useState("operation");
 
   return (
-    <div className="w-96 bg-white">
+    <div className="w-96 bg-background">
       {/* 标题 */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+      <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4">
         <h1 className="text-lg font-bold">Cookie Tools</h1>
-        <p className="text-xs text-blue-100 mt-1">Cookie读取与写入工具</p>
+        <p className="text-xs opacity-90 mt-1">Cookie读取与写入工具</p>
       </div>
 
       {/* Tab切换 */}
-      <div className="p-4">
+      <div className="p-4 h-[448px] overflow-y-auto">
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="operation" className="flex-1">

@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CookieConfig } from "@/types";
+import type { CookieConfig, HistoryItem } from "@/types";
 import { MessageType } from "@/types";
-import { X, Plus } from "lucide-react";
 
 interface ConfigTabProps {
   onConfigSaved?: () => void;
@@ -13,8 +13,8 @@ interface ConfigTabProps {
 
 export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   const [sourceUrl, setSourceUrl] = useState("");
-  const [cookieNames, setCookieNames] = useState<string[]>([""]);
-  const [urlHistory, setUrlHistory] = useState<string[]>([]);
+  const [cookieNamesText, setCookieNamesText] = useState("");
+  const [urlHistory, setUrlHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -33,7 +33,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
       if (response.success && response.data) {
         const config: CookieConfig = response.data;
         setSourceUrl(config.sourceUrl);
-        setCookieNames(config.cookieNames.length > 0 ? config.cookieNames : [""]);
+        setCookieNamesText(config.cookieNames.join("\n"));
       }
     } catch (error) {
       console.error("Failed to load config:", error);
@@ -60,8 +60,12 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
         return;
       }
 
-      // 过滤空的Cookie名称
-      const validCookieNames = cookieNames.filter((name) => name.trim() !== "");
+      // 解析Cookie名称（一行一个）
+      const validCookieNames = cookieNamesText
+        .split(/\n|,|;|\s+/)
+        .map((name) => name.trim())
+        .filter((name) => name !== "");
+
       if (validCookieNames.length === 0) {
         setMessage({ type: "error", text: "请至少添加一个Cookie名称" });
         return;
@@ -93,24 +97,10 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-  const handleAddCookieName = () => {
-    setCookieNames([...cookieNames, ""]);
-  };
 
-  const handleRemoveCookieName = (index: number) => {
-    if (cookieNames.length > 1) {
-      setCookieNames(cookieNames.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleCookieNameChange = (index: number, value: string) => {
-    const newNames = [...cookieNames];
-    newNames[index] = value;
-    setCookieNames(newNames);
-  };
-
-  const handleSelectFromHistory = (url: string) => {
-    setSourceUrl(url);
+  const handleSelectFromHistory = (item: HistoryItem) => {
+    setSourceUrl(item.url);
+    setCookieNamesText(item.cookieNames.join("\n"));
   };
 
   return (
@@ -134,15 +124,16 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
           {/* 历史记录 */}
           {urlHistory.length > 0 && (
             <div className="mt-2">
-              <p className="text-xs text-gray-500 mb-1">历史记录:</p>
+              <p className="text-xs text-muted-foreground mb-1">历史记录:</p>
               <div className="flex flex-wrap gap-1">
-                {urlHistory.map((url, index) => (
+                {urlHistory.map((item, index) => (
                   <button
                     key={index}
-                    onClick={() => handleSelectFromHistory(url)}
-                    className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700 transition-colors"
+                    onClick={() => handleSelectFromHistory(item)}
+                    className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded text-foreground transition-colors"
+                    title={`url: ${item.url}\n Cookies: ${item.cookieNames?.join(', ')}`}
                   >
-                    {new URL(url).hostname}
+                    {new URL(item.url).hostname}
                   </button>
                 ))}
               </div>
@@ -150,37 +141,19 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
           )}
         </div>
 
-        {/* Cookie名称列表 */}
+        {/* Cookie名称 */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Cookie名称</Label>
-            <Button type="button" size="sm" variant="outline" onClick={handleAddCookieName}>
-              <Plus className="h-4 w-4 mr-1" />
-              添加
-            </Button>
-          </div>
-
-          <div className="space-y-2">
-            {cookieNames.map((name, index) => (
-              <div key={index} className="flex gap-2">
-                <Input
-                  placeholder="Cookie名称"
-                  value={name}
-                  onChange={(e) => handleCookieNameChange(index, e.target.value)}
-                />
-                {cookieNames.length > 1 && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleRemoveCookieName(index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+          <Label htmlFor="cookieNames">Cookie名称（一行一个）</Label>
+          <Textarea
+            id="cookieNames"
+            placeholder="refreshToken\ntoken\ntenantId"
+            value={cookieNamesText}
+            onChange={(e) => setCookieNamesText(e.target.value)}
+            rows={5}
+          />
+          <p className="text-xs text-muted-foreground">
+            每行输入一个Cookie名称
+          </p>
         </div>
 
         {/* 消息提示 */}
@@ -188,8 +161,8 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
           <div
             className={`p-3 rounded text-sm ${
               message.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : "bg-red-50 text-red-800 border border-red-200"
+                ? "bg-green-50 text-green-800 border border-green-200 dark:bg-green-950 dark:text-green-200 dark:border-green-800"
+                : "bg-red-50 text-red-800 border border-red-200 dark:bg-red-950 dark:text-red-200 dark:border-red-800"
             }`}
           >
             {message.text}
