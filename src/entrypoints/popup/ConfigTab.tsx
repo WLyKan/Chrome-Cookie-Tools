@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { CookieConfig, HistoryItem } from "@/types";
 import { MessageType } from "@/types";
@@ -14,12 +15,14 @@ interface ConfigTabProps {
 export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   const [sourceUrl, setSourceUrl] = useState("");
   const [cookieNamesText, setCookieNamesText] = useState("");
+  const [storageType, setStorageType] = useState<'localStorage' | 'cookie'>('localStorage');
   const [urlHistory, setUrlHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // 加载配置
   useEffect(() => {
+    setMessage(null);
     loadConfig();
     loadUrlHistory();
   }, []);
@@ -34,6 +37,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
         const config: CookieConfig = response.data;
         setSourceUrl(config.sourceUrl);
         setCookieNamesText(config.cookieNames.join("\n"));
+        setStorageType(config.storageType || 'localStorage');
       }
     } catch (error) {
       console.error("Failed to load config:", error);
@@ -49,13 +53,16 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-  const handleSaveConfig = async () => {
+  const handleSaveConfig = async ({ type, url }: { type?: "localStorage" | "cookie"; url?: string }) => {
     setLoading(true);
     setMessage(null);
 
+    const targetUrl = url?.trim() ?? sourceUrl.trim();
+    const targetType = type ?? storageType;
+
     try {
       // 验证输入
-      if (!sourceUrl.trim()) {
+      if (!targetUrl) {
         setMessage({ type: "error", text: "请输入源网站URL" });
         return;
       }
@@ -72,8 +79,9 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
       }
 
       const config: CookieConfig = {
-        sourceUrl: sourceUrl.trim(),
+        sourceUrl: targetUrl,
         cookieNames: validCookieNames,
+        storageType: targetType,
         updatedAt: Date.now(),
       };
 
@@ -97,10 +105,15 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-
   const handleSelectFromHistory = (item: HistoryItem) => {
     setSourceUrl(item.url);
     setCookieNamesText(item.cookieNames.join("\n"));
+    handleSaveConfig({ url: item.url });
+  };
+
+  const handleStorageTypeChange = (checked: boolean) => {
+    setStorageType(checked ? 'cookie' : 'localStorage');
+    handleSaveConfig({ type: checked ? 'cookie' : 'localStorage' });
   };
 
   return (
@@ -110,6 +123,29 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
         <CardDescription>设置源网站和需要读取的Cookie</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* 存储类型切换 */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="storage-type">存储类型</Label>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm ${storageType === 'localStorage' ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                LocalStorage
+              </span>
+              <Switch
+                id="storage-type"
+                checked={storageType === 'cookie'}
+                onCheckedChange={handleStorageTypeChange}
+              />
+              <span className={`text-sm ${storageType === 'cookie' ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                Cookie
+              </span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {storageType === 'localStorage' ? '当前读取 localStorage 数据' : '当前读取 Cookie 数据'}
+          </p>
+        </div>
+
         {/* 源网站URL */}
         <div className="space-y-2">
           <Label htmlFor="sourceUrl">源网站URL</Label>
@@ -143,7 +179,9 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
 
         {/* Cookie名称 */}
         <div className="space-y-2">
-          <Label htmlFor="cookieNames">Cookie名称（一行一个）</Label>
+          <Label htmlFor="cookieNames">
+            {storageType === 'localStorage' ? 'LocalStorage 键名（一行一个）' : 'Cookie 名称（一行一个）'}
+          </Label>
           <Textarea
             id="cookieNames"
             placeholder="refreshToken\ntoken\ntenantId"
@@ -152,7 +190,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
             rows={5}
           />
           <p className="text-xs text-muted-foreground">
-            每行输入一个Cookie名称
+            {storageType === 'localStorage' ? '每行输入一个 LocalStorage 键名' : '每行输入一个 Cookie 名称'}
           </p>
         </div>
 

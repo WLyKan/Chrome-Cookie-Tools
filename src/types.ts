@@ -20,6 +20,8 @@ export interface CookieConfig {
   sourceUrl: string;
   /** 需要读取的 Cookie 名称列表 */
   cookieNames: string[];
+  /** 存储类型：localStorage 或 cookie */
+  storageType?: 'localStorage' | 'cookie';
   /** 更新时间戳 */
   updatedAt: number;
 }
@@ -40,6 +42,26 @@ export interface CookieOperationResult {
 export interface StoredCookieInfo {
   /** Cookie 数据 */
   cookies: CookieData[];
+  /** 源网站 URL */
+  sourceUrl: string;
+  /** 保存时间戳 */
+  timestamp: number;
+}
+
+/**
+ * LocalStorage 数据类型
+ */
+export interface LocalStorageData {
+  key: string;
+  value: string;
+}
+
+/**
+ * 存储的 LocalStorage 信息
+ */
+export interface StoredLocalStorageInfo {
+  /** LocalStorage 数据 */
+  data: LocalStorageData[];
   /** 源网站 URL */
   sourceUrl: string;
   /** 保存时间戳 */
@@ -83,6 +105,7 @@ export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
 export const DEFAULT_COOKIE_CONFIG: CookieConfig = {
   sourceUrl: DEFAULT_SOURCE_URL,
   cookieNames: ['refreshtoken', 'token', 'tenantId'],
+  storageType: 'localStorage',
   updatedAt: 0,
 };
 
@@ -97,6 +120,8 @@ export type TabType = 'config' | 'operation';
 export enum MessageType {
   READ_COOKIES = 'READ_COOKIES',
   WRITE_COOKIES = 'WRITE_COOKIES',
+  READ_LOCALSTORAGE = 'READ_LOCALSTORAGE',
+  WRITE_LOCALSTORAGE = 'WRITE_LOCALSTORAGE',
   GET_CONFIG = 'GET_CONFIG',
   SAVE_CONFIG = 'SAVE_CONFIG',
 }
@@ -137,6 +162,28 @@ export interface WriteCookiesRequest extends MessageRequest {
 export interface SaveConfigRequest extends MessageRequest {
   type: MessageType.SAVE_CONFIG;
   payload: CookieConfig;
+}
+
+/**
+ * 读取 LocalStorage 请求
+ */
+export interface ReadLocalStorageRequest extends MessageRequest {
+  type: MessageType.READ_LOCALSTORAGE;
+  payload: {
+    sourceUrl: string;
+    keys: string[];
+  };
+}
+
+/**
+ * 写入 LocalStorage 请求
+ */
+export interface WriteLocalStorageRequest extends MessageRequest {
+  type: MessageType.WRITE_LOCALSTORAGE;
+  payload: {
+    targetUrl: string;
+    data: LocalStorageData[];
+  };
 }
 
 /**

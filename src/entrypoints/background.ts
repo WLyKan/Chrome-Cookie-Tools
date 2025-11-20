@@ -2,17 +2,20 @@ import type {
   MessageType,
   ReadCookiesRequest,
   WriteCookiesRequest,
+  ReadLocalStorageRequest,
+  WriteLocalStorageRequest,
   SaveConfigRequest,
   MessageResponse,
   CookieData,
   CookieConfig,
   StoredCookieInfo,
+  StoredLocalStorageInfo,
+  LocalStorageData,
   HistoryItem,
 } from "@/types";
 import { DEFAULT_COOKIE_CONFIG } from "@/types";
 
 export default defineBackground(() => {
-  console.log("Cookie Tools Background Service Started", { id: browser.runtime.id });
 
   // 监听来自popup的消息
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -31,6 +34,10 @@ async function handleMessage(message: any): Promise<MessageResponse> {
         return await handleReadCookies(message as ReadCookiesRequest);
       case "WRITE_COOKIES":
         return await handleWriteCookies(message as WriteCookiesRequest);
+      case "READ_LOCALSTORAGE":
+        return await handleReadLocalStorage(message as ReadLocalStorageRequest);
+      case "WRITE_LOCALSTORAGE":
+        return await handleWriteLocalStorage(message as WriteLocalStorageRequest);
       case "GET_CONFIG":
         return await handleGetConfig();
       case "SAVE_CONFIG":
@@ -214,6 +221,115 @@ async function handleWriteCookies(
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to write cookies",
+    };
+  }
+}
+
+/**
+ * 读取源网站的LocalStorage
+ */
+async function handleReadLocalStorage(
+  request: ReadLocalStorageRequest
+): Promise<MessageResponse<LocalStorageData[]>> {
+  const { sourceUrl, keys } = request.payload;
+
+  try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, error: '未找到活动标签页' };
+    }
+
+    // 验证URL
+    const url = new URL(sourceUrl);
+    const currentUrl = new URL(tab.url);
+
+    if (url.hostname !== currentUrl.hostname) {
+      return { success: false, error: `请在源站点（${url.hostname}）页面执行` };
+    }
+
+    // 向content script发送消息读取localStorage
+    const response = await browser.tabs.sendMessage(tab.id, {
+      type: 'READ_LOCALSTORAGE',
+      payload: { keys },
+    });
+
+    if (response.success) {
+      const data: LocalStorageData[] = response.data || [];
+
+      // 保存读取到的LocalStorage数据
+      const storedInfo: StoredLocalStorageInfo = {
+        data,
+        sourceUrl,
+        timestamp: Date.now(),
+      };
+
+      await browser.storage.local.set({ lastReadLocalStorage: storedInfo });
+
+      return {
+        success: true,
+        data,
+      };
+    } else {
+      return {
+        success: false,
+        error: response.error || 'Failed to read localStorage',
+      };
+    }
+  } catch (error) {
+    console.error("Error reading localStorage:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to read localStorage",
+    };
+  }
+}
+
+/**
+ * 写入LocalStorage到目标网站
+ */
+async function handleWriteLocalStorage(
+  request: WriteLocalStorageRequest
+): Promise<MessageResponse<number>> {
+  const { targetUrl, data } = request.payload;
+
+  try {
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, error: '未找到活动标签页' };
+    }
+
+    // 验证URL
+    const targetUrlObj = new URL(targetUrl);
+    const currentUrl = new URL(tab.url);
+
+    if (targetUrlObj.hostname !== currentUrl.hostname) {
+      return { success: false, error: `请在目标站点（${targetUrlObj.hostname}）页面执行` };
+    }
+
+    // 向content script发送消息写入localStorage
+    const response = await browser.tabs.sendMessage(tab.id, {
+      type: 'WRITE_LOCALSTORAGE',
+      payload: { data },
+    });
+
+    if (response.success) {
+      return {
+        success: true,
+        data: response.count || 0,
+      };
+    } else {
+      return {
+        success: false,
+        error: response.error || 'Failed to write localStorage',
+      };
+    }
+  } catch (error) {
+    console.error("Error writing localStorage:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to write localStorage",
     };
   }
 }
