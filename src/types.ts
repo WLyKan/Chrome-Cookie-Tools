@@ -13,18 +13,25 @@ export interface CookieData {
 }
 
 /**
- * Cookie 配置
+ * 存储配置（支持 Cookie 和 LocalStorage）
  */
-export interface CookieConfig {
+export interface StorageConfig {
   /** 源网站 URL */
   sourceUrl: string;
-  /** 需要读取的 Cookie 名称列表 */
-  cookieNames: string[];
+  /** 需要读取的存储键名列表（Cookie 名称或 LocalStorage 键名） */
+  storageKeys: string[];
+  /** @deprecated 使用 storageKeys 替代 */
+  cookieNames?: string[];
   /** 存储类型：localStorage 或 cookie */
   storageType?: 'localStorage' | 'cookie';
   /** 更新时间戳 */
   updatedAt: number;
 }
+
+/**
+ * @deprecated 使用 StorageConfig 替代
+ */
+export type CookieConfig = StorageConfig;
 
 /**
  * Cookie 操作结果
@@ -74,8 +81,10 @@ export interface StoredLocalStorageInfo {
 export interface HistoryItem {
   /** 源网站 URL */
   url: string;
-  /** Cookie 名称列表 */
-  cookieNames: string[];
+  /** 存储键名列表（Cookie 名称或 LocalStorage 键名） */
+  storageKeys: string[];
+  /** @deprecated 使用 storageKeys 替代 */
+  cookieNames?: string[];
   /** 保存时间戳 */
   timestamp: number;
 }
@@ -101,13 +110,18 @@ export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
   updatedAt: 0,
 };
 
-/** 默认 Cookie 配置 */
-export const DEFAULT_COOKIE_CONFIG: CookieConfig = {
+/** 默认存储配置 */
+export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
   sourceUrl: DEFAULT_SOURCE_URL,
-  cookieNames: ['refreshtoken', 'token', 'tenantId'],
+  storageKeys: ['REFRESH_TOKEN', 'token', 'tenantId'],
   storageType: 'localStorage',
   updatedAt: 0,
 };
+
+/**
+ * @deprecated 使用 DEFAULT_STORAGE_CONFIG 替代
+ */
+export const DEFAULT_COOKIE_CONFIG = DEFAULT_STORAGE_CONFIG;
 
 /**
  * Popup 标签页类型
@@ -161,7 +175,7 @@ export interface WriteCookiesRequest extends MessageRequest {
  */
 export interface SaveConfigRequest extends MessageRequest {
   type: MessageType.SAVE_CONFIG;
-  payload: CookieConfig;
+  payload: StorageConfig;
 }
 
 /**

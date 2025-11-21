@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CookieConfig, HistoryItem } from "@/types";
+import type { StorageConfig, HistoryItem } from "@/types";
 import { MessageType } from "@/types";
 
 interface ConfigTabProps {
@@ -14,13 +14,13 @@ interface ConfigTabProps {
 
 export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   const [sourceUrl, setSourceUrl] = useState("");
-  const [cookieNamesText, setCookieNamesText] = useState("");
+  const [storageKeysText, setStorageKeysText] = useState("");
   const [storageType, setStorageType] = useState<'localStorage' | 'cookie'>('localStorage');
   const [urlHistory, setUrlHistory] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // 加载配置
+  // Load configuration
   useEffect(() => {
     setMessage(null);
     loadConfig();
@@ -34,9 +34,11 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
       });
 
       if (response.success && response.data) {
-        const config: CookieConfig = response.data;
+        const config: StorageConfig = response.data;
         setSourceUrl(config.sourceUrl);
-        setCookieNamesText(config.cookieNames.join("\n"));
+        // Backward compatibility: support both storageKeys and cookieNames
+        const keys = (config as any).storageKeys || (config as any).cookieNames || [];
+        setStorageKeysText(keys.join("\n"));
         setStorageType(config.storageType || 'localStorage');
       }
     } catch (error) {
@@ -53,12 +55,12 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-  const handleSaveConfig = async ({ type, url }: { type?: "localStorage" | "cookie"; url?: string }) => {
+  const handleSaveConfig = async (params?: { storageType?: "localStorage" | "cookie"; url?: string }) => {
     setLoading(true);
     setMessage(null);
 
-    const targetUrl = url?.trim() ?? sourceUrl.trim();
-    const targetType = type ?? storageType;
+    const targetUrl = params?.url?.trim() ?? sourceUrl.trim();
+    const targetType = params?.storageType ?? storageType;
 
     try {
       // 验证输入
@@ -67,20 +69,20 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
         return;
       }
 
-      // 解析Cookie名称（一行一个）
-      const validCookieNames = cookieNamesText
+      // Parse storage keys (one per line)
+      const validStorageKeys = storageKeysText
         .split(/\n|,|;|\s+/)
         .map((name) => name.trim())
         .filter((name) => name !== "");
 
-      if (validCookieNames.length === 0) {
-        setMessage({ type: "error", text: "请至少添加一个Cookie名称" });
+      if (validStorageKeys.length === 0) {
+        setMessage({ type: "error", text: "请至少添加一个存储键名" });
         return;
       }
 
-      const config: CookieConfig = {
+      const config: StorageConfig = {
         sourceUrl: targetUrl,
-        cookieNames: validCookieNames,
+        storageKeys: validStorageKeys,
         storageType: targetType,
         updatedAt: Date.now(),
       };
@@ -107,20 +109,22 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
 
   const handleSelectFromHistory = (item: HistoryItem) => {
     setSourceUrl(item.url);
-    setCookieNamesText(item.cookieNames.join("\n"));
+    // Backward compatibility: support both storageKeys and cookieNames
+    const keys = (item as any).storageKeys || (item as any).cookieNames || [];
+    setStorageKeysText(keys.join("\n"));
     handleSaveConfig({ url: item.url });
   };
 
   const handleStorageTypeChange = (checked: boolean) => {
     setStorageType(checked ? 'cookie' : 'localStorage');
-    handleSaveConfig({ type: checked ? 'cookie' : 'localStorage' });
+    handleSaveConfig({ storageType: checked ? 'cookie' : 'localStorage' });
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>配置</CardTitle>
-        <CardDescription>设置源网站和需要读取的Cookie</CardDescription>
+        <CardDescription>设置源网站和需要读取的存储数据</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 存储类型切换 */}
@@ -167,7 +171,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
                     key={index}
                     onClick={() => handleSelectFromHistory(item)}
                     className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded text-foreground transition-colors"
-                    title={`url: ${item.url}\n Cookies: ${item.cookieNames?.join(', ')}`}
+                    title={`url: ${item.url}\n存储键: ${((item as any).storageKeys || (item as any).cookieNames || []).join(', ')}`}
                   >
                     {new URL(item.url).hostname}
                   </button>
@@ -177,16 +181,16 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
           )}
         </div>
 
-        {/* Cookie名称 */}
+        {/* 存储键名 */}
         <div className="space-y-2">
-          <Label htmlFor="cookieNames">
+          <Label htmlFor="storageKeys">
             {storageType === 'localStorage' ? 'LocalStorage 键名（一行一个）' : 'Cookie 名称（一行一个）'}
           </Label>
           <Textarea
-            id="cookieNames"
-            placeholder="refreshToken\ntoken\ntenantId"
-            value={cookieNamesText}
-            onChange={(e) => setCookieNamesText(e.target.value)}
+            id="storageKeys"
+            placeholder="REFRESH_TOKEN\ntoken\ntenantId"
+            value={storageKeysText}
+            onChange={(e) => setStorageKeysText(e.target.value)}
             rows={5}
           />
           <p className="text-xs text-muted-foreground">
@@ -208,7 +212,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
         )}
 
         {/* 保存按钮 */}
-        <Button onClick={handleSaveConfig} disabled={loading} className="w-full">
+        <Button onClick={() => handleSaveConfig({})} disabled={loading} className="w-full">
           {loading ? "保存中..." : "保存配置"}
         </Button>
       </CardContent>

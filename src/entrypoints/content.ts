@@ -2,11 +2,10 @@ import type { LocalStorageData } from '@/types';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
-  // world: 'MAIN',
+  world: 'MAIN',
   main() {
     // Listen for messages from background script
     browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      console.log('message :>>', message)
       if (message.type === 'READ_LOCALSTORAGE') {
         const keys: string[] = message.payload.keys;
         const data: LocalStorageData[] = [];

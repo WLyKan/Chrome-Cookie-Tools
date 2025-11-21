@@ -7,13 +7,13 @@ import type {
   SaveConfigRequest,
   MessageResponse,
   CookieData,
-  CookieConfig,
+  StorageConfig,
   StoredCookieInfo,
   StoredLocalStorageInfo,
   LocalStorageData,
   HistoryItem,
 } from "@/types";
-import { DEFAULT_COOKIE_CONFIG } from "@/types";
+import { DEFAULT_STORAGE_CONFIG } from "@/types";
 
 export default defineBackground(() => {
 
@@ -335,12 +335,12 @@ async function handleWriteLocalStorage(
 }
 
 /**
- * 获取配置
+ * Get configuration
  */
-async function handleGetConfig(): Promise<MessageResponse<CookieConfig>> {
+async function handleGetConfig(): Promise<MessageResponse<StorageConfig>> {
   try {
     const result = await browser.storage.sync.get("cookieConfig");
-    const config = result.cookieConfig || DEFAULT_COOKIE_CONFIG;
+    const config = result.cookieConfig || DEFAULT_STORAGE_CONFIG;
 
     return {
       success: true,
@@ -356,15 +356,15 @@ async function handleGetConfig(): Promise<MessageResponse<CookieConfig>> {
 }
 
 /**
- * 保存配置
+ * Save configuration
  */
 async function handleSaveConfig(
   request: SaveConfigRequest
-): Promise<MessageResponse<CookieConfig>> {
+): Promise<MessageResponse<StorageConfig>> {
   const config = request.payload;
 
   try {
-    // 验证配置
+    // Validate configuration
     if (!config.sourceUrl) {
       return {
         success: false,
@@ -372,10 +372,12 @@ async function handleSaveConfig(
       };
     }
 
-    if (!config.cookieNames || config.cookieNames.length === 0) {
+    // Backward compatibility: support both storageKeys and cookieNames
+    const keys = config.storageKeys || (config as any).cookieNames || [];
+    if (!keys || keys.length === 0) {
       return {
         success: false,
-        error: "At least one cookie name is required",
+        error: "At least one storage key is required",
       };
     }
 
@@ -389,14 +391,19 @@ async function handleSaveConfig(
       };
     }
 
-    // 更新时间戳
+    // Update timestamp
     config.updatedAt = Date.now();
+    // Normalize to use storageKeys
+    if (!config.storageKeys && (config as any).cookieNames) {
+      config.storageKeys = (config as any).cookieNames;
+      delete (config as any).cookieNames;
+    }
 
-    // 保存配置
+    // Save configuration
     await browser.storage.sync.set({ cookieConfig: config });
 
-    // 更新历史记录
-    await updateUrlHistory(config.sourceUrl, config.cookieNames);
+    // Update history with storageKeys
+    await updateUrlHistory(config.sourceUrl, config.storageKeys);
 
     return {
       success: true,
@@ -412,25 +419,25 @@ async function handleSaveConfig(
 }
 
 /**
- * 更新URL历史记录（最多保留5条，同时保存URL和Cookie名称）
+ * Update URL history (keep last 5 entries, save both URL and storage keys)
  */
-async function updateUrlHistory(url: string, cookieNames: string[]): Promise<void> {
+async function updateUrlHistory(url: string, storageKeys: string[]): Promise<void> {
   try {
     const result = await browser.storage.sync.get("urlHistory");
     let history: HistoryItem[] = result.urlHistory || [];
 
-    // 移除重复项（相同URL）
+    // Remove duplicates (same URL)
     history = history.filter((item) => item.url !== url);
 
-    // 添加到开头
+    // Add to beginning
     const newItem: HistoryItem = {
       url,
-      cookieNames,
+      storageKeys,
       timestamp: Date.now(),
     };
     history.unshift(newItem);
 
-    // 只保留最近5条
+    // Keep only last 5 entries
     history = history.slice(0, 5);
 
     await browser.storage.sync.set({ urlHistory: history });

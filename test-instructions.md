@@ -20,8 +20,8 @@
 5. 检查是否显示成功消息和已保存的 Cookie 信息
 
 **预期结果：**
-- 成功读取 `refreshtoken`、`token`、`tenantId` 等 Cookie
-- 显示成功消息，例如："成功读取 3 个 Cookie: refreshtoken, token, tenantId"
+- 成功读取 `REFRESH_TOKEN`、`token`、`tenantId` 等 Cookie
+- 显示成功消息，例如："成功读取 3 个 Cookie: REFRESH_TOKEN, token, tenantId"
 - 在下方显示已保存的 Cookie 列表和保存时间
 
 ### 3. 测试写入 Cookie 功能
@@ -32,7 +32,7 @@
 3. 检查是否显示成功消息
 
 **预期结果：**
-- 显示成功消息，例如："成功写入 3 个 Cookie: refreshtoken, token, tenantId"
+- 显示成功消息，例如："成功写入 3 个 Cookie: REFRESH_TOKEN, token, tenantId"
 - 如果目标网站已打开，可以检查该网站的 Cookie 是否已写入
 
 ### 4. 检查浏览器控制台
@@ -49,7 +49,7 @@
 
 1. **测试未登录状态读取 Cookie：**
    - 在没有登录源网站的情况下，尝试读取 Cookie
-   - 应该显示错误消息："未找到以下 Cookie: refreshtoken, token, tenantId"
+   - 应该显示错误消息："未找到以下 Cookie: REFRESH_TOKEN, token, tenantId"
 
 2. **测试空目标域名写入：**
    - 不输入目标域名，直接点击"写入 Cookie"

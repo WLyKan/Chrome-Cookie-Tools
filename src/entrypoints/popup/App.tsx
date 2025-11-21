@@ -11,8 +11,8 @@ function App() {
     <div className="w-96 bg-background">
       {/* 标题 */}
       <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4">
-        <h1 className="text-lg font-bold">Cookie Tools</h1>
-        <p className="text-xs opacity-90 mt-1">Cookie读取与写入工具</p>
+        <h1 className="text-lg font-bold">Storage Dev Tools</h1>
+        <p className="text-xs opacity-90 mt-1">Storage 读取与写入，方便开发调试</p>
       </div>
 
       {/* Tab切换 */}

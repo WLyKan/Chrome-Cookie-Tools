@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CookieConfig, CookieData, LocalStorageData } from "@/types";
+import type { StorageConfig, CookieData, LocalStorageData } from "@/types";
 import { MessageType } from "@/types";
-import { Download, Upload, Cookie } from "lucide-react";
+import { Download, Upload, Cookie, Database } from "lucide-react";
 
 export function OperationTab() {
-  const [config, setConfig] = useState<CookieConfig | null>(null);
+  const [config, setConfig] = useState<StorageConfig | null>(null);
   const [currentTab, setCurrentTab] = useState<{ url: string; title: string } | null>(null);
   const [cookies, setCookies] = useState<CookieData[]>([]);
   const [localStorageData, setLocalStorageData] = useState<LocalStorageData[]>([]);
@@ -18,6 +18,13 @@ export function OperationTab() {
     loadConfig();
     getCurrentTab();
   }, []);
+
+  // Load saved data when config changes
+  useEffect(() => {
+    if (config) {
+      loadSavedData();
+    }
+  }, [config]);
 
   const loadConfig = async () => {
     try {
@@ -47,27 +54,73 @@ export function OperationTab() {
     }
   };
 
-  const handleReadCookies = async () => {
+  const loadSavedData = async () => {
+    if (!config) return;
+
+    try {
+      const storageType = config.storageType || 'localStorage';
+
+      if (storageType === 'cookie') {
+        // Only load cookie data
+        const result = await browser.storage.local.get('lastReadCookies');
+
+        if (result.lastReadCookies && result.lastReadCookies.cookies) {
+          setCookies(result.lastReadCookies.cookies);
+          setLocalStorageData([]); // Clear localStorage data
+
+          if (result.lastReadCookies.cookies.length > 0) {
+            setMessage({
+              type: "info",
+              text: `已加载上次保存的 ${result.lastReadCookies.cookies.length} 个 Cookie`
+            });
+          }
+        } else {
+          setCookies([]);
+        }
+      } else {
+        // Only load localStorage data
+        const result = await browser.storage.local.get('lastReadLocalStorage');
+
+        if (result.lastReadLocalStorage && result.lastReadLocalStorage.data) {
+          setLocalStorageData(result.lastReadLocalStorage.data);
+          setCookies([]); // Clear cookie data
+
+          if (result.lastReadLocalStorage.data.length > 0) {
+            setMessage({
+              type: "info",
+              text: `已加载上次保存的 ${result.lastReadLocalStorage.data.length} 个 LocalStorage 数据`
+            });
+          }
+        } else {
+          setLocalStorageData([]);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load saved data:", error);
+    }
+  };
+
+  const handleReadData = async () => {
     if (!config) {
-      setMessage({ type: "error", text: "请先设置源网站和需要获取的Cookie名称" });
+      setMessage({ type: "error", text: "请先设置源网站和需要获取的存储键名" });
       return;
     }
 
     setLoading(true);
     setMessage(null);
-    setCookies([]);
-    setLocalStorageData([]);
 
     try {
       const storageType = config.storageType || 'localStorage';
+      // Backward compatibility: support both storageKeys and cookieNames
+      const keys = config.storageKeys || (config as any).cookieNames || [];
 
       if (storageType === 'localStorage') {
-        // 读取 LocalStorage
+        // Read LocalStorage
         const response = await browser.runtime.sendMessage({
           type: MessageType.READ_LOCALSTORAGE,
           payload: {
             sourceUrl: config.sourceUrl,
-            keys: config.cookieNames,
+            keys: keys,
           },
         });
 
@@ -82,12 +135,12 @@ export function OperationTab() {
           setMessage({ type: "error", text: response.error || "读取 LocalStorage 失败" });
         }
       } else {
-        // 读取 Cookie
+        // Read Cookie
         const response = await browser.runtime.sendMessage({
           type: MessageType.READ_COOKIES,
           payload: {
             sourceUrl: config.sourceUrl,
-            cookieNames: config.cookieNames,
+            cookieNames: keys,
           },
         });
 
@@ -110,7 +163,7 @@ export function OperationTab() {
     }
   };
 
-  const handleWriteCookies = async () => {
+  const handleWriteData = async () => {
     const storageType = config?.storageType || 'localStorage';
     const hasData = storageType === 'localStorage' ? localStorageData.length > 0 : cookies.length > 0;
 
@@ -162,6 +215,7 @@ export function OperationTab() {
     } catch (error) {
       setMessage({ type: "error", text: "写入数据时出错" });
       console.error("Error writing data:", error);
+      loadSavedData();
     } finally {
       setLoading(false);
     }
@@ -180,17 +234,19 @@ export function OperationTab() {
         {config && (
           <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
             <div className="flex items-start">
-              <span className="font-medium text-gray-700 min-w-20">源网站:</span>
+              <span className="font-medium text-gray-700 w-[90px] pr-1 shrink-0">源网站:</span>
               <span className="text-gray-600 break-all">{config.sourceUrl}</span>
             </div>
             <div className="flex items-start">
-              <span className="font-medium text-gray-700 min-w-20">
+              <span className="font-medium text-gray-700 w-[90px] pr-1">
                 {config.storageType === 'cookie' ? 'Cookie:' : 'LocalStorage:'}
               </span>
-              <span className="text-gray-600">{config.cookieNames.join(", ")}</span>
+              <span className="text-gray-600">
+                {(config.storageKeys || (config as any).cookieNames || []).join(", ")}
+              </span>
             </div>
             <div className="flex items-start">
-              <span className="font-medium text-gray-700 min-w-20">存储类型:</span>
+              <span className="font-medium text-gray-700 w-[90px] pr-1">存储类型:</span>
               <span className="text-gray-600">
                 {config.storageType === 'cookie' ? 'Cookie' : 'LocalStorage'}
               </span>
@@ -200,7 +256,7 @@ export function OperationTab() {
 
         {/* 读取数据 */}
         <div className="space-y-2">
-          <Button onClick={handleReadCookies} disabled={loading || !config} className="w-full">
+          <Button onClick={handleReadData} disabled={loading || !config} className="w-full">
             <Download className="h-4 w-4 mr-2" />
             {loading ? "读取中..." : config?.storageType === 'cookie' ? "读取 Cookie" : "读取 LocalStorage"}
           </Button>
@@ -238,7 +294,7 @@ export function OperationTab() {
                     className="p-2 border-b border-border last:border-b-0 hover:bg-muted/50"
                   >
                     <div className="flex items-center gap-2">
-                      <Cookie className="h-3 w-3 text-muted-foreground" />
+                      <Database className="h-3 w-3 text-muted-foreground" />
                       <span className="font-medium text-sm">{item.key}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 truncate pl-5">
@@ -255,7 +311,7 @@ export function OperationTab() {
         {/* 写入数据 */}
         <div className="space-y-2">
           <Button
-            onClick={handleWriteCookies}
+            onClick={handleWriteData}
             disabled={loading || (cookies.length === 0 && localStorageData.length === 0) || !currentTab}
             className="w-full"
             variant="default"
