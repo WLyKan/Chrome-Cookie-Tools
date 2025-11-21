@@ -16,6 +16,11 @@ import type {
 import { DEFAULT_STORAGE_CONFIG } from "@/types";
 
 export default defineBackground(() => {
+  // 设置开发环境徽标
+  if (import.meta.env.DEV) {
+    chrome.action.setBadgeText({ text: 'DEV' });
+    chrome.action.setBadgeBackgroundColor({ color: '#FCD34D' }); // yellow-300
+  }
 
   // 监听来自popup的消息
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {

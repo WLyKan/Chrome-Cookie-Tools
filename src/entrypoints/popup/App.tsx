@@ -6,12 +6,20 @@ import { Settings, Play } from "lucide-react";
 
 function App() {
   const [activeTab, setActiveTab] = useState("operation");
+  const isDev = import.meta.env.DEV;
 
   return (
     <div className="w-96 bg-background">
       {/* 标题 */}
       <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4 flex items-center gap-3">
-        <img src="/icons/256.png" alt="Logo" className="w-10 h-10" />
+        <div className="relative">
+          <img src="/icons/256.png" alt="Logo" className="w-10 h-10" />
+          {isDev && (
+            <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[10px] font-bold px-1 rounded-lg shadow-md">
+              DEV
+            </span>
+          )}
+        </div>
         <div>
           <h1 className="text-lg font-bold">Storage Dev Tools</h1>
           <p className="text-xs opacity-90 mt-1">Storage 读取与写入，方便开发调试</p>
