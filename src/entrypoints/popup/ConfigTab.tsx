@@ -137,6 +137,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
               </span>
               <Switch
                 id="storage-type"
+                disabled
                 checked={storageType === 'cookie'}
                 onCheckedChange={handleStorageTypeChange}
               />
