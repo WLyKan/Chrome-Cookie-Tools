@@ -298,8 +298,8 @@ export function OperationTab() {
                       <span className="font-medium text-sm">{item.key}</span>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1 truncate pl-5">
-                      {item.value.substring(0, 50)}
-                      {item.value.length > 50 ? "..." : ""}
+                      {item.value?.substring(0, 50)}
+                      {item.value?.length > 50 ? "..." : ""}
                     </div>
                   </div>
                 ))
