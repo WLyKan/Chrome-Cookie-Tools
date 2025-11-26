@@ -12,18 +12,18 @@ export interface CookieData {
   expirationDate?: number;
 }
 
+export type StorageType = 'localStorage' | 'cookie';
+
 /**
  * 存储配置（支持 Cookie 和 LocalStorage）
  */
 export interface StorageConfig {
-  /** 源网站 URL */
-  sourceUrl: string;
   /** 需要读取的存储键名列表（Cookie 名称或 LocalStorage 键名） */
   storageKeys: string[];
   /** @deprecated 使用 storageKeys 替代 */
   cookieNames?: string[];
   /** 存储类型：localStorage 或 cookie */
-  storageType?: 'localStorage' | 'cookie';
+  storageType?: StorageType;
   /** 更新时间戳 */
   updatedAt: number;
 }
@@ -76,20 +76,6 @@ export interface StoredLocalStorageInfo {
 }
 
 /**
- * 历史记录项
- */
-export interface HistoryItem {
-  /** 源网站 URL */
-  url: string;
-  /** 存储键名列表（Cookie 名称或 LocalStorage 键名） */
-  storageKeys: string[];
-  /** @deprecated 使用 storageKeys 替代 */
-  cookieNames?: string[];
-  /** 保存时间戳 */
-  timestamp: number;
-}
-
-/**
  * 源网站 URL 配置
  */
 export interface SourceUrlConfig {
@@ -101,20 +87,19 @@ export interface SourceUrlConfig {
 }
 
 /** 默认源网站 URL */
-export const DEFAULT_SOURCE_URL = 'https://ai-dev.supcon.com/agenthub/home';
+export const DEFAULT_TYPE = 'localStorage';
 
 /** 默认源网站配置 */
 export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
-  current: DEFAULT_SOURCE_URL,
-  history: [DEFAULT_SOURCE_URL],
+  current: DEFAULT_TYPE,
+  history: [DEFAULT_TYPE],
   updatedAt: 0,
 };
 
 /** 默认存储配置 */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
-  sourceUrl: DEFAULT_SOURCE_URL,
   storageKeys: ['REFRESH_TOKEN', 'token', 'tenantId'],
-  storageType: 'localStorage',
+  storageType: DEFAULT_TYPE,
   updatedAt: 0,
 };
 

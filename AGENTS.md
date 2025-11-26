@@ -1,7 +1,8 @@
 # Repository Guidelines
 
 ## 基础要求
-总是使用中文回答。
+- 总是使用中文回答。
+- 使用 pnpm 包管理工具。
 
 ## 技术栈
 - [WXT](https://wxt.dev) - A framework for building web extensions.

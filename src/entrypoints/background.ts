@@ -1,3 +1,5 @@
+import { TableItem } from "@/components/Table"
+import dayjs from "dayjs"
 import type {
   MessageType,
   ReadCookiesRequest,
@@ -11,9 +13,9 @@ import type {
   StoredCookieInfo,
   StoredLocalStorageInfo,
   LocalStorageData,
-  HistoryItem,
 } from "@/types";
 import { DEFAULT_STORAGE_CONFIG } from "@/types";
+import { objectToKeyValues } from "@/utils"
 
 export default defineBackground(() => {
   // 设置开发环境徽标
@@ -245,27 +247,27 @@ async function handleReadLocalStorage(
       return { success: false, error: '未找到活动标签页' };
     }
 
-    // 验证URL
-    const url = new URL(sourceUrl);
-    const currentUrl = new URL(tab.url);
-
-    if (url.hostname !== currentUrl.hostname) {
-      return { success: false, error: `请在源站点（${url.hostname}）页面执行` };
-    }
-
-    // 向content script发送消息读取localStorage
-    const response = await browser.tabs.sendMessage(tab.id, {
-      type: 'READ_LOCALSTORAGE',
-      payload: { keys },
+    const response = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (keys: string[]) => {
+        const result: Record<string, string> = {};
+        for (const k of keys) {
+          const v = window.localStorage.getItem(k);
+          if (typeof v === 'string') result[k] = v;
+        }
+        return result;
+      },
+      args: [keys],
+      world: 'MAIN',
     });
 
-    if (response.success) {
-      const data: LocalStorageData[] = response.data || [];
+    if (response?.length > 0) {
+      const data: LocalStorageData[] = objectToKeyValues(response[0].result || {});
 
       // 保存读取到的LocalStorage数据
       const storedInfo: StoredLocalStorageInfo = {
         data,
-        sourceUrl,
+        sourceUrl: tab.url,
         timestamp: Date.now(),
       };
 
@@ -278,7 +280,7 @@ async function handleReadLocalStorage(
     } else {
       return {
         success: false,
-        error: response.error || 'Failed to read localStorage',
+        error: 'Failed to read localStorage',
       };
     }
   } catch (error) {
@@ -305,29 +307,34 @@ async function handleWriteLocalStorage(
       return { success: false, error: '未找到活动标签页' };
     }
 
-    // 验证URL
-    const targetUrlObj = new URL(targetUrl);
-    const currentUrl = new URL(tab.url);
-
-    if (targetUrlObj.hostname !== currentUrl.hostname) {
-      return { success: false, error: `请在目标站点（${targetUrlObj.hostname}）页面执行` };
-    }
-
-    // 向content script发送消息写入localStorage
-    const response = await browser.tabs.sendMessage(tab.id, {
-      type: 'WRITE_LOCALSTORAGE',
-      payload: { data },
+    const injection = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (entries: [string, string][]) => {
+        const okKeys: string[] = [];
+        const failKeys: string[] = [];
+        for (const [k, v] of entries) {
+          try {
+            window.localStorage.setItem(k, v);
+            okKeys.push(k);
+          } catch (e) {
+            failKeys.push(k);
+          }
+        }
+        return { ok: okKeys, fail: failKeys };
+      },
+      args: [data.map(({key, value}) => [key, value] as [string, string])],
+      world: 'MAIN',
     });
 
-    if (response.success) {
+    if (injection?.length > 0) {
       return {
         success: true,
-        data: response.count || 0,
+        data: injection[0].result?.ok?.length || 0,
       };
     } else {
       return {
         success: false,
-        error: response.error || 'Failed to write localStorage',
+        error: 'Failed to write localStorage',
       };
     }
   } catch (error) {
@@ -344,8 +351,8 @@ async function handleWriteLocalStorage(
  */
 async function handleGetConfig(): Promise<MessageResponse<StorageConfig>> {
   try {
-    const result = await browser.storage.sync.get("cookieConfig");
-    const config = result.cookieConfig || DEFAULT_STORAGE_CONFIG;
+    const result = await browser.storage.sync.get('config');
+    const config = result.config || DEFAULT_STORAGE_CONFIG;
 
     return {
       success: true,
@@ -369,30 +376,12 @@ async function handleSaveConfig(
   const config = request.payload;
 
   try {
-    // Validate configuration
-    if (!config.sourceUrl) {
-      return {
-        success: false,
-        error: "Source URL is required",
-      };
-    }
-
     // Backward compatibility: support both storageKeys and cookieNames
     const keys = config.storageKeys || (config as any).cookieNames || [];
     if (!keys || keys.length === 0) {
       return {
         success: false,
         error: "At least one storage key is required",
-      };
-    }
-
-    // 验证URL格式
-    try {
-      new URL(config.sourceUrl);
-    } catch {
-      return {
-        success: false,
-        error: "Invalid source URL format",
       };
     }
 
@@ -405,10 +394,10 @@ async function handleSaveConfig(
     }
 
     // Save configuration
-    await browser.storage.sync.set({ cookieConfig: config });
+    await browser.storage.sync.set({ config: config });
 
     // Update history with storageKeys
-    await updateUrlHistory(config.sourceUrl, config.storageKeys);
+    await updateConfigHistory(config);
 
     return {
       success: true,
@@ -426,26 +415,30 @@ async function handleSaveConfig(
 /**
  * Update URL history (keep last 5 entries, save both URL and storage keys)
  */
-async function updateUrlHistory(url: string, storageKeys: string[]): Promise<void> {
+async function updateConfigHistory(config: StorageConfig): Promise<void> {
   try {
-    const result = await browser.storage.sync.get("urlHistory");
-    let history: HistoryItem[] = result.urlHistory || [];
+    const result = await browser.storage.sync.get("configHistory");
+    let history = result.configHistory || [];
 
-    // Remove duplicates (same URL)
-    history = history.filter((item) => item.url !== url);
+    // Remove duplicates (same source)
+    history = history.filter(
+      (item: TableItem) =>
+        item.type !== config.storageType ||
+        item.content !== config.storageKeys.join(',')
+    );
 
     // Add to beginning
-    const newItem: HistoryItem = {
-      url,
-      storageKeys,
-      timestamp: Date.now(),
+    const newItem = {
+      type: `${config.storageType}`,
+      content: config.storageKeys.join(','),
+      createdAt: dayjs().format("YYYY:MM HH:mm:ss"),
     };
     history.unshift(newItem);
 
     // Keep only last 5 entries
     history = history.slice(0, 5);
 
-    await browser.storage.sync.set({ urlHistory: history });
+    await browser.storage.sync.set({ configHistory: history });
   } catch (error) {
     console.error("Error updating URL history:", error);
   }

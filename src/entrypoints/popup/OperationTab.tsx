@@ -119,7 +119,7 @@ export function OperationTab() {
         const response = await browser.runtime.sendMessage({
           type: MessageType.READ_LOCALSTORAGE,
           payload: {
-            sourceUrl: config.sourceUrl,
+            source: config.storageType,
             keys: keys,
           },
         });
@@ -139,7 +139,7 @@ export function OperationTab() {
         const response = await browser.runtime.sendMessage({
           type: MessageType.READ_COOKIES,
           payload: {
-            sourceUrl: config.sourceUrl,
+            source: config.storageType,
             cookieNames: keys,
           },
         });
@@ -234,15 +234,15 @@ export function OperationTab() {
         {config && (
           <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
             <div className="flex items-start">
-              <span className="font-medium text-gray-700 w-[90px] pr-1 shrink-0">源网站:</span>
-              <span className="text-gray-600 break-all">{config.sourceUrl}</span>
+              <span className="font-medium text-gray-700 w-[90px] pr-1 shrink-0">当前网址:</span>
+              <span className="text-gray-600 break-all">{currentTab?.url || '--'}</span>
             </div>
             <div className="flex items-start">
               <span className="font-medium text-gray-700 w-[90px] pr-1">
                 {config.storageType === 'cookie' ? 'Cookie:' : 'LocalStorage:'}
               </span>
-              <span className="text-gray-600">
-                {(config.storageKeys || (config as any).cookieNames || []).join(", ")}
+              <span className="text-gray-600 whitespace-pre-wrap">
+                {Array.isArray(config.storageKeys) ? config.storageKeys.join('\n') : config.storageKeys || '--'}
               </span>
             </div>
             <div className="flex items-start">

@@ -5,18 +5,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { StorageConfig, HistoryItem } from "@/types";
-import { MessageType } from "@/types";
+import type { StorageConfig, StorageType } from "@/types";
+import { DEFAULT_TYPE, MessageType } from "@/types";
+import Table, { TableItem } from "@/components/Table"
 
 interface ConfigTabProps {
   onConfigSaved?: () => void;
 }
 
 export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
-  const [sourceUrl, setSourceUrl] = useState("");
+  const [source, setSource] = useState("");
   const [storageKeysText, setStorageKeysText] = useState("");
   const [storageType, setStorageType] = useState<'localStorage' | 'cookie'>('localStorage');
-  const [urlHistory, setUrlHistory] = useState<HistoryItem[]>([]);
+  const [configHistory, setConfigHistory] = useState<TableItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -24,7 +25,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   useEffect(() => {
     setMessage(null);
     loadConfig();
-    loadUrlHistory();
+    loadConfigHistory();
   }, []);
 
   const loadConfig = async () => {
@@ -35,7 +36,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
 
       if (response.success && response.data) {
         const config: StorageConfig = response.data;
-        setSourceUrl(config.sourceUrl);
+        setSource(config.storageType || DEFAULT_TYPE);
         // Backward compatibility: support both storageKeys and cookieNames
         const keys = (config as any).storageKeys || (config as any).cookieNames || [];
         setStorageKeysText(keys.join("\n"));
@@ -46,31 +47,24 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-  const loadUrlHistory = async () => {
+  const loadConfigHistory = async () => {
     try {
-      const result = await browser.storage.sync.get("urlHistory");
-      setUrlHistory(result.urlHistory || []);
+      const result = await browser.storage.sync.get("configHistory");
+      setConfigHistory(result.configHistory || []);
     } catch (error) {
-      console.error("Failed to load URL history:", error);
+      console.error("Failed to load config history:", error);
     }
   };
 
-  const handleSaveConfig = async (params?: { storageType?: "localStorage" | "cookie"; url?: string }) => {
+  const handleSaveConfig = async (params?: { type?: StorageType; keys?: string }) => {
     setLoading(true);
     setMessage(null);
-
-    const targetUrl = params?.url?.trim() ?? sourceUrl.trim();
-    const targetType = params?.storageType ?? storageType;
+    const targetType = params?.type ?? DEFAULT_TYPE;
+    const keysText = params?.keys ?? storageKeysText;
 
     try {
-      // 验证输入
-      if (!targetUrl) {
-        setMessage({ type: "error", text: "请输入源网站URL" });
-        return;
-      }
-
       // Parse storage keys (one per line)
-      const validStorageKeys = storageKeysText
+      const validStorageKeys = keysText
         .split(/\n|,|;|\s+/)
         .map((name) => name.trim())
         .filter((name) => name !== "");
@@ -81,7 +75,6 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
       }
 
       const config: StorageConfig = {
-        sourceUrl: targetUrl,
         storageKeys: validStorageKeys,
         storageType: targetType,
         updatedAt: Date.now(),
@@ -94,7 +87,7 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
 
       if (response.success) {
         setMessage({ type: "success", text: "配置保存成功！" });
-        await loadUrlHistory();
+        await loadConfigHistory();
         onConfigSaved?.();
       } else {
         setMessage({ type: "error", text: response.error || "保存失败" });
@@ -107,24 +100,26 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
     }
   };
 
-  const handleSelectFromHistory = (item: HistoryItem) => {
-    setSourceUrl(item.url);
+  const handleSelectFromHistory = (item: TableItem) => {
+    setSource(item.type || DEFAULT_TYPE);
     // Backward compatibility: support both storageKeys and cookieNames
-    const keys = (item as any).storageKeys || (item as any).cookieNames || [];
-    setStorageKeysText(keys.join("\n"));
-    handleSaveConfig({ url: item.url });
+    const keys = item.content || '';
+    const formattedKeys = keys.split(`,`).join(`\n`);
+    setStorageKeysText(formattedKeys);
+    // Pass the formatted keys directly to handleSaveConfig to avoid async state update issues
+    handleSaveConfig({ type: item.type || DEFAULT_TYPE, keys: formattedKeys });
   };
 
   const handleStorageTypeChange = (checked: boolean) => {
     setStorageType(checked ? 'cookie' : 'localStorage');
-    handleSaveConfig({ storageType: checked ? 'cookie' : 'localStorage' });
+    handleSaveConfig({ type: checked ? 'cookie' : 'localStorage' });
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>配置</CardTitle>
-        <CardDescription>设置源网站和需要读取的存储数据</CardDescription>
+        <CardDescription>设置需要读取的存储数据</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 存储类型切换 */}
@@ -151,33 +146,12 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
           </p>
         </div>
 
-        {/* 源网站URL */}
         <div className="space-y-2">
-          <Label htmlFor="sourceUrl">源网站URL</Label>
-          <Input
-            id="sourceUrl"
-            type="url"
-            placeholder="https://example.com"
-            value={sourceUrl}
-            onChange={(e) => setSourceUrl(e.target.value)}
-          />
-
           {/* 历史记录 */}
-          {urlHistory.length > 0 && (
+          {configHistory.length > 0 && (
             <div className="mt-2">
               <p className="text-xs text-muted-foreground mb-1">历史记录:</p>
-              <div className="flex flex-wrap gap-1">
-                {urlHistory.map((item, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSelectFromHistory(item)}
-                    className="text-xs px-2 py-1 bg-muted hover:bg-accent rounded text-foreground transition-colors"
-                    title={`url: ${item.url}\n存储键: ${((item as any).storageKeys || (item as any).cookieNames || []).join(', ')}`}
-                  >
-                    {new URL(item.url).hostname}
-                  </button>
-                ))}
-              </div>
+              <Table onRowClick={handleSelectFromHistory} data={configHistory} />
             </div>
           )}
         </div>

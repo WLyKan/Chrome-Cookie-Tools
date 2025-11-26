@@ -24,5 +24,11 @@ export default defineConfig({
       "cookies",
     ],
     host_permissions: ["<all_urls>"],
+    // web_accessible_resources: [
+    //   {
+    //     resources: ["read-local-storage.js"],
+    //     matches: ["<all_urls>"],
+    //   },
+    // ],
   },
 });
