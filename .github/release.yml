@@ -1,0 +1,15 @@
+# .github/release.yml
+changelog:
+  exclude:
+    labels:
+      - ignore
+  categories:
+    - title: "🚀 新特性"
+      labels:
+        - feat
+    - title: "🐛 修复"
+      labels:
+        - bug
+    - title: "📦 依赖更新"
+      labels:
+        - chore
