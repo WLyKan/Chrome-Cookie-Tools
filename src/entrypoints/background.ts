@@ -425,6 +425,9 @@ async function handleReadStorage(
     });
 
     // 读取 Cookie（包含 Session Cookie）
+    // 注意：这里不再调用 browser.permissions.request，以避免在非用户手势上下文中触发
+    // “This function must be called during a user gesture” 错误。
+    // 如果没有权限，则仅跳过 Cookie 读取，继续返回 localStorage / sessionStorage 结果。
     const cookieMap: Record<string, CookieData> = {};
     let hasPermission = await browser.permissions.contains({
       permissions: ["cookies"],
@@ -432,16 +435,9 @@ async function handleReadStorage(
     });
 
     if (!hasPermission) {
-      const granted = await browser.permissions.request({
-        permissions: ["cookies"],
-        origins: [`${expectedUrl.protocol}//${expectedUrl.hostname}/*`],
+      console.warn("[StorageDevTools][background] handleReadStorage: cookies permission missing", {
+        origin: `${expectedUrl.protocol}//${expectedUrl.hostname}/*`,
       });
-      hasPermission = granted;
-      if (!granted) {
-        console.warn("[StorageDevTools][background] handleReadStorage: cookies permission denied", {
-          origin: `${expectedUrl.protocol}//${expectedUrl.hostname}/*`,
-        });
-      }
     }
     console.log("[StorageDevTools][background] handleReadStorage: hasPermission", hasPermission, keys);
     if (hasPermission) {

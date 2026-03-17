@@ -10,7 +10,7 @@ function App() {
   const isDev = import.meta.env.DEV;
 
   return (
-    <div className="w-[520px] bg-background relative">
+    <div className="w-[520px] h-[540px] bg-background relative flex flex-col">
       <Toaster position="top-center" duration={3000} closeButton />
       {/* 标题 */}
       <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4 flex items-center gap-3">
@@ -29,8 +29,8 @@ function App() {
       </div>
 
       {/* Tab切换 */}
-      <div className="p-4 h-[448px] overflow-y-auto">
-        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+      <div className="p-4 flex-1 overflow-auto">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
           <TabsList className="w-full">
             <TabsTrigger value="operation" className="flex-1">
               <Play className="h-4 w-4 mr-2" />
@@ -42,11 +42,11 @@ function App() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="operation">
+          <TabsContent value="operation" className="flex-1 mt-3 overflow-auto">
             <OperationTab />
           </TabsContent>
 
-          <TabsContent value="config">
+          <TabsContent value="config" className="flex-1 mt-3 overflow-auto">
             <ConfigTab onConfigSaved={() => setActiveTab("operation")} />
           </TabsContent>
         </Tabs>

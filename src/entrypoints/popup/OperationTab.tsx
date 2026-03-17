@@ -168,7 +168,18 @@ export function OperationTab() {
           <div className="bg-muted/50 dark:bg-muted/20 p-3 rounded-md space-y-1 text-sm">
             <div className="flex items-start">
               <span className="font-medium w-[90px] pr-1 shrink-0">当前网址:</span>
-              <span className="text-muted-foreground break-all">{currentTab?.url || "--"}</span>
+              <span
+                className="text-muted-foreground break-all"
+                style={{
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+                title={currentTab?.url || undefined}
+              >
+                {currentTab?.url || "--"}
+              </span>
             </div>
             <div className="flex items-start">
               <span className="font-medium w-[90px] pr-1 shrink-0">存储键:</span>
