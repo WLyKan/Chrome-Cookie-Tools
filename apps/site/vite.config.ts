@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 
 export default defineConfig({
-  base: "/chrome-cookie-tools/",
+  base: "/Chrome-Cookie-Tools/",
   plugins: [react()],
   server: {
     port: 5173,
