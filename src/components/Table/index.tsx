@@ -58,8 +58,7 @@ export default function CustomTable({
     <Table className="table-fixed w-full">
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[120px] overflow-hidden text-ellipsis whitespace-nowrap">Type</TableHead>
-          <TableHead className="w-[150px] overflow-hidden text-ellipsis whitespace-nowrap">Content</TableHead>
+          <TableHead className="overflow-hidden text-ellipsis whitespace-nowrap">Content</TableHead>
           <TableHead className="w-[128px] text-right overflow-hidden text-ellipsis whitespace-nowrap">Time</TableHead>
         </TableRow>
       </TableHeader>
@@ -70,14 +69,13 @@ export default function CustomTable({
             onClick={() => onRowClick?.(item)}
             className={`${typeof onRowClick === 'function' ? 'cursor-pointer' : ''} hover:bg-muted/50`}
           >
-            <TableCell className="font-medium w-[120px] overflow-hidden text-ellipsis whitespace-nowrap" title={item.type}>{item.type}</TableCell>
-            <TableCell className="w-[150px] overflow-hidden text-ellipsis whitespace-nowrap" title={item.content}>{item.content}</TableCell>
+            <TableCell className="font-medium overflow-hidden text-ellipsis whitespace-nowrap" title={item.content}>{item.content}</TableCell>
             <TableCell className="w-[128px] text-right overflow-hidden text-ellipsis whitespace-nowrap" title={item.createdAt}>{item.createdAt}</TableCell>
           </TableRow>
         ))}
         {data.length === 0 && (
           <TableRow>
-            <TableCell colSpan={3} className="text-center">
+            <TableCell colSpan={2} className="text-center">
               <Empty
                 title="No data"
                 description="No data found"

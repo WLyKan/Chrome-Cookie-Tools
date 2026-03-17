@@ -6,6 +6,8 @@ import type {
   WriteCookiesRequest,
   ReadLocalStorageRequest,
   WriteLocalStorageRequest,
+  ReadStorageRequest,
+  WriteStorageRequest,
   SaveConfigRequest,
   MessageResponse,
   CookieData,
@@ -13,8 +15,11 @@ import type {
   StoredCookieInfo,
   StoredLocalStorageInfo,
   LocalStorageData,
+  StorageType,
+  UnifiedStorageItem,
+  StoredUnifiedInfo,
 } from "@/types";
-import { DEFAULT_STORAGE_CONFIG } from "@/types";
+import { DEFAULT_STORAGE_CONFIG, DEFAULT_TYPE } from "@/types";
 import { objectToKeyValues } from "@/utils"
 
 export default defineBackground(() => {
@@ -49,6 +54,10 @@ async function handleMessage(message: any): Promise<MessageResponse> {
         return await handleGetConfig();
       case "SAVE_CONFIG":
         return await handleSaveConfig(message as SaveConfigRequest);
+      case "READ_STORAGE":
+        return await handleReadStorage(message as ReadStorageRequest);
+      case "WRITE_STORAGE":
+        return await handleWriteStorage(message as WriteStorageRequest);
       default:
         return {
           success: false,
@@ -120,6 +129,7 @@ async function handleReadCookies(
 
       if (cookieList.length > 0) {
         const cookie = cookieList[0];
+
         cookies.push({
           name: cookie.name,
           value: cookie.value,
@@ -247,6 +257,17 @@ async function handleReadLocalStorage(
       return { success: false, error: '未找到活动标签页' };
     }
 
+    // 验证当前页面与源 URL 是否一致（仅在正确页面执行）
+    const expectedUrl = new URL(sourceUrl);
+    const currentUrl = new URL(tab.url);
+
+    if (expectedUrl.hostname !== currentUrl.hostname) {
+      return {
+        success: false,
+        error: `请在源站点（${expectedUrl.hostname}）页面执行`,
+      };
+    }
+
     const response = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: (keys: string[]) => {
@@ -267,7 +288,7 @@ async function handleReadLocalStorage(
       // 保存读取到的LocalStorage数据
       const storedInfo: StoredLocalStorageInfo = {
         data,
-        sourceUrl: tab.url,
+        sourceUrl: sourceUrl,
         timestamp: Date.now(),
       };
 
@@ -297,7 +318,7 @@ async function handleReadLocalStorage(
  */
 async function handleWriteLocalStorage(
   request: WriteLocalStorageRequest
-): Promise<MessageResponse<number>> {
+): Promise<MessageResponse<{ okCount: number; failCount: number }>> {
   const { targetUrl, data } = request.payload;
 
   try {
@@ -326,22 +347,344 @@ async function handleWriteLocalStorage(
       world: 'MAIN',
     });
 
-    if (injection?.length > 0) {
-      return {
-        success: true,
-        data: injection[0].result?.ok?.length || 0,
-      };
-    } else {
+    if (!injection || injection.length === 0) {
       return {
         success: false,
         error: 'Failed to write localStorage',
       };
     }
+
+    const result = injection[0].result as { ok?: string[]; fail?: string[] } | undefined;
+    const okCount = result?.ok?.length ?? 0;
+    const failCount = result?.fail?.length ?? 0;
+
+    return {
+      success: true,
+      data: {
+        okCount,
+        failCount,
+      },
+    };
   } catch (error) {
     console.error("Error writing localStorage:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to write localStorage",
+    };
+  }
+}
+
+/**
+ * 统一读取：按 key 在 localStorage → sessionStorage → cookie 中取第一个匹配
+ */
+async function handleReadStorage(
+  request: ReadStorageRequest
+): Promise<MessageResponse<UnifiedStorageItem[]>> {
+  const { sourceUrl, keys } = request.payload;
+
+  try {
+    console.log("[StorageDevTools][background] handleReadStorage: start", {
+      sourceUrl,
+      keys,
+    });
+
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, error: "未找到活动标签页" };
+    }
+
+    const expectedUrl = new URL(sourceUrl);
+    const currentUrl = new URL(tab.url);
+    if (expectedUrl.hostname !== currentUrl.hostname) {
+      return {
+        success: false,
+        error: `请在源站点（${expectedUrl.hostname}）页面执行`,
+      };
+    }
+
+    // 注入脚本：一次性读取所有 key 的 localStorage 和 sessionStorage
+    const scriptResult = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (keys: string[]) => {
+        const local: Record<string, string | null> = {};
+        const session: Record<string, string | null> = {};
+        for (const k of keys) {
+          local[k] = window.localStorage.getItem(k);
+          session[k] = window.sessionStorage.getItem(k);
+        }
+        return { local, session };
+      },
+      args: [keys],
+      world: "MAIN",
+    });
+
+    const { local = {}, session = {} } = (scriptResult?.[0]?.result as { local?: Record<string, string | null>; session?: Record<string, string | null> }) || {};
+    console.log("[StorageDevTools][background] handleReadStorage: LS/SS result", {
+      local,
+      session,
+    });
+
+    // 读取 Cookie（包含 Session Cookie）
+    const cookieMap: Record<string, CookieData> = {};
+    let hasPermission = await browser.permissions.contains({
+      permissions: ["cookies"],
+      origins: [`${expectedUrl.protocol}//${expectedUrl.hostname}/*`],
+    });
+
+    if (!hasPermission) {
+      const granted = await browser.permissions.request({
+        permissions: ["cookies"],
+        origins: [`${expectedUrl.protocol}//${expectedUrl.hostname}/*`],
+      });
+      hasPermission = granted;
+      if (!granted) {
+        console.warn("[StorageDevTools][background] handleReadStorage: cookies permission denied", {
+          origin: `${expectedUrl.protocol}//${expectedUrl.hostname}/*`,
+        });
+      }
+    }
+    console.log("[StorageDevTools][background] handleReadStorage: hasPermission", hasPermission, keys);
+    if (hasPermission) {
+      for (const name of keys) {
+        const list = await browser.cookies.getAll({ url: sourceUrl, name });
+        console.log("[StorageDevTools][background] handleReadStorage: name, list", {
+          name,
+          list,
+        });
+        if (list.length > 0) {
+          const c = list[0];
+          cookieMap[name] = {
+            name: c.name,
+            value: c.value,
+            domain: c.domain,
+            path: c.path,
+            secure: c.secure,
+            httpOnly: c.httpOnly,
+            sameSite: c.sameSite,
+            expirationDate: c.expirationDate,
+          };
+        }
+      }
+    }
+    console.log("[StorageDevTools][background] handleReadStorage: cookie result", {
+      cookieKeys: Object.keys(cookieMap),
+    });
+
+    // 按 key 顺序，每个 key 取第一个匹配：localStorage → sessionStorage → cookie
+    const items: UnifiedStorageItem[] = [];
+    for (const key of keys) {
+      const localVal = local[key];
+      if (localVal != null && localVal !== "") {
+        items.push({ key, value: localVal, source: "localStorage" });
+        continue;
+      }
+      const sessionVal = session[key];
+      if (sessionVal != null && sessionVal !== "") {
+        items.push({ key, value: sessionVal, source: "sessionStorage" });
+        continue;
+      }
+      const cookie = cookieMap[key];
+      if (cookie) {
+        items.push({
+          key,
+          value: cookie.value,
+          source: "cookie",
+          cookieData: cookie,
+        });
+      }
+    }
+
+    const stored: StoredUnifiedInfo = {
+      items,
+      sourceUrl,
+      timestamp: Date.now(),
+    };
+    await browser.storage.local.set({ lastReadUnified: stored });
+
+    console.log("[StorageDevTools][background] handleReadStorage: done", {
+      itemCount: items.length,
+      items,
+    });
+
+    return { success: true, data: items };
+  } catch (error) {
+    console.error("Error in handleReadStorage:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "读取失败",
+    };
+  }
+}
+
+/**
+ * 统一写入：按每条 item.source 写回 localStorage / sessionStorage / cookie
+ */
+async function handleWriteStorage(
+  request: WriteStorageRequest
+): Promise<MessageResponse<{ okCount: number; failCount: number }>> {
+  const { targetUrl, items } = request.payload;
+
+  try {
+    console.log("[StorageDevTools][background] handleWriteStorage: start", {
+      targetUrl,
+      itemCount: items.length,
+      items,
+    });
+
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (!tab || !tab.id || !tab.url) {
+      return { success: false, error: "未找到活动标签页" };
+    }
+
+    const url = new URL(targetUrl);
+    const domain = url.hostname;
+
+    const localEntries: [string, string][] = [];
+    const sessionEntries: [string, string][] = [];
+    const cookieItems: CookieData[] = [];
+
+    for (const item of items) {
+      if (item.source === "localStorage") {
+        localEntries.push([item.key, item.value]);
+      } else if (item.source === "sessionStorage") {
+        sessionEntries.push([item.key, item.value]);
+      } else if (item.source === "cookie" && item.cookieData) {
+        cookieItems.push(item.cookieData);
+      }
+    }
+
+    console.log("[StorageDevTools][background] handleWriteStorage: grouped", {
+      localCount: localEntries.length,
+      sessionCount: sessionEntries.length,
+      cookieCount: cookieItems.length,
+    });
+
+    let okCount = 0;
+    let failCount = 0;
+
+    // 写入 localStorage
+    if (localEntries.length > 0) {
+      const res = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (entries: [string, string][]) => {
+          const ok: string[] = [];
+          const fail: string[] = [];
+          for (const [k, v] of entries) {
+            try {
+              window.localStorage.setItem(k, v);
+              ok.push(k);
+            } catch {
+              fail.push(k);
+            }
+          }
+          return { ok, fail };
+        },
+        args: [localEntries],
+        world: "MAIN",
+      });
+      const r = (res?.[0]?.result as { ok?: string[]; fail?: string[] }) || {};
+      okCount += r.ok?.length ?? 0;
+      failCount += r.fail?.length ?? 0;
+      console.log("[StorageDevTools][background] handleWriteStorage: localStorage result", r);
+    }
+
+    // 写入 sessionStorage
+    if (sessionEntries.length > 0) {
+      const res = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (entries: [string, string][]) => {
+          const ok: string[] = [];
+          const fail: string[] = [];
+          for (const [k, v] of entries) {
+            try {
+              window.sessionStorage.setItem(k, v);
+              ok.push(k);
+            } catch {
+              fail.push(k);
+            }
+          }
+          return { ok, fail };
+        },
+        args: [sessionEntries],
+        world: "MAIN",
+      });
+      const r = (res?.[0]?.result as { ok?: string[]; fail?: string[] }) || {};
+      okCount += r.ok?.length ?? 0;
+      failCount += r.fail?.length ?? 0;
+      console.log("[StorageDevTools][background] handleWriteStorage: sessionStorage result", r);
+    }
+
+    // 写入 Cookie
+    if (cookieItems.length > 0) {
+      const hasPermission = await browser.permissions.contains({
+        origins: [`${url.protocol}//${domain}/*`],
+      });
+      if (!hasPermission) {
+        const granted = await browser.permissions.request({
+          origins: [`${url.protocol}//${domain}/*`],
+        });
+        if (!granted) {
+          failCount += cookieItems.length;
+          console.warn("[StorageDevTools][background] handleWriteStorage: cookie permission denied", {
+            targetUrl,
+            cookieCount: cookieItems.length,
+          });
+        } else {
+          for (const cookie of cookieItems) {
+            try {
+              await browser.cookies.set({
+                url: targetUrl,
+                name: cookie.name,
+                value: cookie.value,
+                domain: cookie.domain || domain,
+                path: cookie.path || "/",
+                secure: cookie.secure ?? url.protocol === "https:",
+                httpOnly: cookie.httpOnly ?? false,
+                sameSite: cookie.sameSite || "lax",
+                expirationDate: cookie.expirationDate,
+              });
+              okCount++;
+            } catch {
+              failCount++;
+            }
+          }
+        }
+      } else {
+        for (const cookie of cookieItems) {
+          try {
+            await browser.cookies.set({
+              url: targetUrl,
+              name: cookie.name,
+              value: cookie.value,
+              domain: cookie.domain || domain,
+              path: cookie.path || "/",
+              secure: cookie.secure ?? url.protocol === "https:",
+              httpOnly: cookie.httpOnly ?? false,
+              sameSite: cookie.sameSite || "lax",
+              expirationDate: cookie.expirationDate,
+            });
+            okCount++;
+          } catch {
+            failCount++;
+          }
+        }
+      }
+    }
+
+    console.log("[StorageDevTools][background] handleWriteStorage: done", {
+      okCount,
+      failCount,
+    });
+
+    return {
+      success: true,
+      data: { okCount, failCount },
+    };
+  } catch (error) {
+    console.error("Error in handleWriteStorage:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "写入失败",
     };
   }
 }
@@ -413,33 +756,36 @@ async function handleSaveConfig(
 }
 
 /**
- * Update URL history (keep last 5 entries, save both URL and storage keys)
+ * 更新配置历史
+ * - 仅使用 browser.storage.local 存储
+ * - 保留最近 10 条，按最近使用排序
  */
 async function updateConfigHistory(config: StorageConfig): Promise<void> {
   try {
-    const result = await browser.storage.sync.get("configHistory");
+    const result = await browser.storage.local.get("configHistory");
     let history = result.configHistory || [];
 
-    // Remove duplicates (same source)
+    // 移除相同类型 + 相同 key 列表的旧记录
     history = history.filter(
       (item: TableItem) =>
         item.type !== config.storageType ||
-        item.content !== config.storageKeys.join(',')
+        item.content !== config.storageKeys.join(","),
     );
 
-    // Add to beginning
-    const newItem = {
-      type: `${config.storageType}`,
-      content: config.storageKeys.join(','),
+    // 新记录插到最前面
+    const storageType: StorageType = (config.storageType || DEFAULT_TYPE) as StorageType;
+    const newItem: TableItem = {
+      type: storageType,
+      content: config.storageKeys.join(","),
       createdAt: dayjs().format("YYYY:MM HH:mm:ss"),
     };
     history.unshift(newItem);
 
-    // Keep only last 5 entries
-    history = history.slice(0, 5);
+    // 只保留最近 10 条
+    history = history.slice(0, 10);
 
-    await browser.storage.sync.set({ configHistory: history });
+    await browser.storage.local.set({ configHistory: history });
   } catch (error) {
-    console.error("Error updating URL history:", error);
+    console.error("Error updating config history:", error);
   }
 }

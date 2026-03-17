@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Toaster } from "@/components/ui/sonner";
 import { ConfigTab } from "./ConfigTab";
 import { OperationTab } from "./OperationTab";
 import { Settings, Play } from "lucide-react";
@@ -9,7 +10,8 @@ function App() {
   const isDev = import.meta.env.DEV;
 
   return (
-    <div className="w-96 bg-background">
+    <div className="w-[520px] bg-background relative">
+      <Toaster position="top-center" duration={3000} closeButton />
       {/* 标题 */}
       <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4 flex items-center gap-3">
         <div className="relative">
