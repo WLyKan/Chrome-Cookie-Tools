@@ -1,192 +1,102 @@
-# Repository Guidelines
+## Storage Dev Tools - AI 使用说明
 
-## 基础要求
-- 总是使用中文回答。
-- 使用 pnpm 包管理工具。
-
-## 技术栈
-- [WXT](https://wxt.dev) - A framework for building web extensions.
-- [TypeScript](https://www.typescriptlang.org) - A superset of JavaScript with static typing.
-- [React](https://reactjs.org) - A JavaScript library for building user interfaces.
-- [Tailwind CSS](https://tailwindcss.com) - A utility-first CSS framework.
-- [Shadcn UI](https://ui.shadcn.com) - A set of ready-to-use React components.
-
-## Project Structure & Module Organization
-- Source: `entrypoints/` (web extension entrypoints)
-  - `background.ts`, `content/`, `popup/`, `options/`
-- Shared code: `utils/` (e.g., `browser/`, `auth/`, `sync/`), `types/`
-- Assets & static: `assets/`, `public/`, `docs/`
-- Config: `wxt.config.ts`, `tailwind.config.js`, `tsconfig.json`
-- Build output: `.output/` (e.g., `chrome-mv3/`, `firefox-mv2/`)
-- Path aliases: use `@/` for project utils/types and `#imports` from WXT.
-- 使用 `pnpm dlx shadcn@latest add [组件名]` 安装 shadcn 组件
-
-## Build, Test, and Development Commands
-- `pnpm dev` — Start Chrome dev build with hot reload.
-- `pnpm dev:firefox` — Start Firefox dev build.
-- `pnpm build` / `pnpm build:firefox` — Production builds.
-- `pnpm zip` — Zip last build for store upload.
-- `pnpm compile` — Type-check with TypeScript.
-- Load locally (Chrome): open `chrome://extensions` → Load unpacked → `.output/chrome-mv3/`.
-
-## Coding Style & Naming Conventions
-- Language: TypeScript + React (functional components).
-- Indentation: 2 spaces; use double quotes for strings; semicolons permitted.
-- Files: libraries `.ts`; components `.tsx`. Component files in PascalCase; exports in camelCase.
-- Imports: prefer path aliases (e.g., `@/utils/...`, `~/assets/tailwind.css`); group std/external/local.
-- No ESLint/Prettier in repo; keep diffs small and consistent with nearby code.
-
-## Testing Guidelines
-- No formal test runner yet. Before PRs: `pnpm compile` must pass.
-- Manual QA: verify `/p` selector in pages (content), options CRUD, category/pin/sort, Notion sync toggles.
-- Confirm both Chrome and Firefox builds launch without console errors.
-
-## Commit & Pull Request Guidelines
-- Commits: Conventional-like style; emojis allowed (e.g., `✨ feat: ...`, `fix: ...`). Keep them small and focused; reference issues (`#123`) when relevant.
-- PRs: include clear description, rationale, steps to reproduce/verify, screenshots/GIFs for UI changes, and mention affected entrypoints.
-
-## Security & Configuration Tips
-- Never commit secrets. Copy `.env.example` → `.env` and set: `WXT_CHROME_APP_CLIENT_ID_PREFIX`, `WXT_WEB_APP_CLIENT_ID_PREFIX`, `WXT_FIREFOX_EXTENSION_ID`.
-- OAuth scopes and IDs are assembled in `wxt.config.ts`; keep published IDs stable.
-
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-## 项目概述（以 `SPEC.md` 为准）
-
-**Storage Dev Tools** - 一个浏览器扩展，用于在开发环境之间传输 Cookie 或 LocalStorage 数据。
-
-**核心功能：** 从源网站读取存储数据，写入到目标网站。支持两种存储类型：
-- **Cookie 模式** - 使用 `chrome.cookies` API 读写 Cookie
-- **LocalStorage 模式** - 使用 `chrome.scripting.executeScript` 读写页面的 LocalStorage
-
-**技术栈：** WXT + React + TypeScript + Tailwind CSS + Shadcn UI
+> 详细产品需求与交互以 `SPEC.md` 为准，本文件只保留对 AI 编码最关键的摘要，避免重复和 token 浪费。
 
 ---
 
-## 开发命令
+### 1. 基本约定
+
+- **语言**：回答与注释一律使用中文。
+- **包管理**：统一使用 `pnpm`。
+- **技术栈**：WXT + React + TypeScript + Tailwind CSS + Shadcn UI。
+- **代码风格**：
+  - 2 空格缩进，字符串使用双引号。
+  - 逻辑组件/库：`.ts`；React 组件：`.tsx`。
+  - 组件文件名 PascalCase，导出使用 camelCase。
+  - 路径别名：`@/` 指向 `src/`；按「标准库 / 第三方 / 本地」分组导入。
+  - 无 ESLint/Prettier，保持与周边代码一致，尽量小 diff。
+
+---
+
+### 2. 运行与构建（只保留高频命令）
 
 ```bash
-# 安装依赖
-pnpm install
-
-# 启动开发服务器（Chrome）
-pnpm dev
-
-# Firefox 开发构建
-pnpm dev:firefox
-
-# 类型检查（PR 前必须通过）
-pnpm compile
-
-# 生产构建
-pnpm build
-pnpm build:firefox
-
-# 打包扩展（用于上传到商店）
-pnpm zip
+pnpm install          # 安装依赖
+pnpm dev              # Chrome 开发调试
+pnpm build            # 生产构建（Chrome）
+pnpm compile          # 类型检查（必须通过）
+pnpm zip              # 打包扩展
 ```
 
-**加载开发版本：** `chrome://extensions/` → 开发者模式 → 加载已解压的扩展程序 → 选择 `.output/chrome-mv3/`
+Chrome 加载开发版本：打开 `chrome://extensions` → 启用开发者模式 →「加载已解压的扩展程序」→ 选择 `.output/chrome-mv3/`。
 
-**添加 Shadcn UI 组件：** `pnpm dlx shadcn@latest add [组件名]`
+Shadcn 组件安装：`pnpm dlx shadcn@latest add [组件名]`。
 
 ---
 
-## 代码风格
+### 3. 项目结构（与 AI 相关的关键位置）
 
-- 总是使用中文回答和注释
-- 2 空格缩进，双引号字符串
-- 组件文件：PascalCase.tsx，导出名：camelCase
-- 路径别名：`@/` 指向 `src/`
-- 无 ESLint/Prettier，保持与周边代码一致的 diff 风格
-- 使用 pnpm 包管理器
-- 提交信息使用类约定式提交 + emoji（例如：`✨ feat: ...`）
+- `src/entrypoints/background.ts`：Service Worker，消息路由、Cookie / LocalStorage 读写、权限/存储管理。
+- `src/entrypoints/popup/`：Popup React 应用，主要包含：
+  - `App.tsx`：入口和 Tab 布局。
+  - `ConfigTab.tsx`：配置管理 UI。
+  - `OperationTab.tsx`：读写操作 UI。
+- `src/entrypoints/content/index.ts`：content script，目前逻辑很少，大部分功能在 `background.ts`。
+- `src/types.ts`：核心类型定义（`CookieData`、`LocalStorageData`、`StorageConfig`、`MessageRequest/Response` 等）。
+- `wxt.config.ts`：WXT 配置、权限、manifest。
 
----
-
-## 架构概览
-
-### 消息流转架构
-
-```
-Popup UI (React)
-    ↓ browser.runtime.sendMessage()
-Background Service Worker (background.ts)
-    ↓ handleMessage()
-    ├─ chrome.cookies API (Cookie 模式)
-    └─ chrome.scripting.executeScript() (LocalStorage 模式)
-    ↓ browser.storage.local.set() / .sync.set()
-Popup UI ← Response
-```
-
-### 关键入口点
-
-| 入口 | 位置 | 职责 |
-|------|------|------|
-| **Background Service Worker** | `src/entrypoints/background.ts` | 消息路由、Cookie/LocalStorage 读写、权限管理 |
-| **Popup UI** | `src/entrypoints/popup/` | React 应用，包含「配置」和「操作」两个标签页 |
-| **Content Script** | `src/entrypoints/content/index.ts` | 当前基本为空（功能已移至 background） |
-
-### 消息类型（MessageType enum）
-
-- `READ_COOKIES` - 读取源网站 Cookie（验证当前页 hostname 与源站一致）
-- `WRITE_COOKIES` - 写入 Cookie 到当前标签页
-- `READ_LOCALSTORAGE` - 使用 executeScript + MAIN world 读取页面 LocalStorage
-- `WRITE_LOCALSTORAGE` - 使用 executeScript + MAIN world 写入页面 LocalStorage
-- `GET_CONFIG` / `SAVE_CONFIG` - 配置管理（存于 `browser.storage.sync`）
-
-### 存储策略
-
-- **读取结果** (`lastReadCookies`, `lastReadLocalStorage`) - `browser.storage.local`（本地缓存）
-- **配置历史** (`configHistory`) - `browser.storage.local`（本地存储，最近 10 条）
-- **配置数据** (`config`) - `browser.storage.sync`（跨设备同步）
+需要新增能力时，优先复用以上模块，而不是在随机文件里新建逻辑。
 
 ---
 
-## 重要实现细节
+### 4. 架构与消息流（AI 编码时需牢记）
 
-### Cookie 读取验证
-`handleReadCookies` 会验证当前标签页的 hostname 与源站 URL 的 hostname 一致，否则报错提示用户在正确的页面执行操作。
+存储读写不直接在 UI 中进行，而是通过消息转发到 `background.ts`：
 
-### LocalStorage 访问方式
-LocalStorage 读写使用 `chrome.scripting.executeScript` 配合 `world: 'MAIN'`，因为 content script 运行在隔离的世界中无法访问页面的 LocalStorage。
+1. Popup UI 触发操作（读取 / 写入 Cookie 或 LocalStorage）。
+2. 使用 `browser.runtime.sendMessage()` 发送消息（`MessageType` 枚举）。
+3. `background.ts` 中的 `handleMessage` 分发到对应处理函数：
+   - Cookie：调用 `chrome.cookies`。
+   - LocalStorage：通过 `chrome.scripting.executeScript` + `world: "MAIN"` 操作页面 LocalStorage。
+4. 结果和错误写入 `browser.storage.local` / `browser.storage.sync`，再回传给 Popup。
 
-### 开发环境标识
-开发模式下扩展图标会显示 "DEV" 徽标（黄色背景）。
-
-### 权限请求
-Cookie 操作需要动态请求 `permissions` 和 `origins`，代码中使用 `browser.permissions.contains()` 检查，缺少权限时调用 `browser.permissions.request()` 请求用户授权。
-
-### 类型系统
-所有类型定义集中在 `src/types.ts`：
-- `CookieData` - Cookie 结构
-- `LocalStorageData` - { key, value } 结构
-- `StorageConfig` - 存储配置（`storageKeys`, `storageType`, `updatedAt`）
-- `MessageRequest<T>` / `MessageResponse<T>` - 消息契约
-
-**注意：** 保留了对旧字段 `cookieNames` 的向后兼容支持，新代码应使用 `storageKeys`。
+**消息类型（简要）**：`READ_COOKIES`、`WRITE_COOKIES`、`READ_LOCALSTORAGE`、`WRITE_LOCALSTORAGE`、`GET_CONFIG`、`SAVE_CONFIG` 等，具体定义以 `src/types.ts` 与 `background.ts` 为准。
 
 ---
 
-## 关键文件路径
+### 5. 存储与权限关键点（避免 AI 误改）
 
-```
-src/entrypoints/background.ts       # Service Worker，核心消息处理
-src/entrypoints/popup/App.tsx       # Popup 主组件
-src/entrypoints/popup/ConfigTab.tsx # 配置管理 UI
-src/entrypoints/popup/OperationTab.tsx # 读写操作 UI
-src/types.ts                        # 所有 TypeScript 类型定义
-wxt.config.ts                       # WXT 框架配置（权限、manifest）
-```
+- **配置与缓存位置**（只记最终结论）：
+  - 读取结果：`lastReadCookies` / `lastReadLocalStorage` → `browser.storage.local`。
+  - 配置历史：`configHistory` → `browser.storage.local`，只保留最近 10 条。
+  - 当前配置：`config` → `browser.storage.sync`，支持跨设备。
+- **字段兼容性**：
+  - 旧字段 `cookieNames` 仍需兼容，新逻辑一律使用 `storageKeys`。
+- **Cookie 域名校验**：
+  - `handleReadCookies` 会校验当前标签页 hostname 必须匹配配置中的源站 hostname，不满足时返回错误提示。
+- **LocalStorage 访问**：
+  - 必须通过 `chrome.scripting.executeScript` + `world: "MAIN"`，不能在 content script 里直接访问。
+- **权限请求**：
+  - 操作 Cookie 前要通过 `browser.permissions.contains()` 检查权限，不足时使用 `browser.permissions.request()` 申请。
 
 ---
 
-## 测试指南
+### 6. 安全与配置
 
-无自动化测试，手动 QA 参考以下文件：
-- `test-checklist.md` - 完整功能测试清单
-- `test-instructions.md` - 测试步骤说明
+- 不要提交任何密钥/敏感信息。
+- 本地开发时复制 `.env.example` 为 `.env`，设置：
+  - `WXT_CHROME_APP_CLIENT_ID_PREFIX`
+  - `WXT_WEB_APP_CLIENT_ID_PREFIX`
+  - `WXT_FIREFOX_EXTENSION_ID`
+- OAuth 相关 ID 和权限在 `wxt.config.ts` 中拼装，已发布的 ID 尽量保持稳定。
 
-**PR 前必须执行：** `pnpm compile`（类型检查）
+---
+
+### 7. 测试与提交要求（精简版）
+
+- **最小要求**：提交前必须跑通 `pnpm compile`。
+- 暂无自动化测试，手动验证重点：
+  - Popup 中配置编辑、历史选择、读写流程是否正常。
+  - Cookie / LocalStorage 在不同环境间读写是否符合预期（尤其是域名校验和覆盖策略）。
+  - Chrome / Firefox 构建后的扩展加载是否无明显报错。
+- 提交信息建议使用类约定式风格，可带 emoji，例如：`✨ feat: add cookie sync`、`fix: handle storage error`。
