@@ -9,6 +9,12 @@ on:
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
+# 设置权限，允许 Action 修改 Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
