@@ -8,7 +8,7 @@ const navLinks = [
 
 const badges = [
   { label: "CHROME 扩展", color: "badge-blue" },
-  { label: "V0.9.0", color: "badge-blue" },
+  { label: "V1.0.0", color: "badge-blue" },
   { label: "COOKIE + LOCALSTORAGE", color: "badge-green" },
   { label: "本地处理", color: "badge-purple" },
   { label: "开源免费", color: "badge-orange" },

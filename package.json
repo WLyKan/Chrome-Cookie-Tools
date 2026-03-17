@@ -2,7 +2,7 @@
   "name": "chrome-cookie-tools",
   "description": "从指定网站读取 Cookie 并写入到目标网站",
   "private": true,
-  "version": "0.9.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
