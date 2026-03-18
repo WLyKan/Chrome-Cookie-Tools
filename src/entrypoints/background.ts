@@ -18,9 +18,10 @@ import type {
   StorageType,
   UnifiedStorageItem,
   StoredUnifiedInfo,
+  ReadHistoryRecord,
 } from "@/types";
 import { DEFAULT_STORAGE_CONFIG, DEFAULT_TYPE } from "@/types";
-import { objectToKeyValues } from "@/utils"
+import { objectToKeyValues, upsertReadHistory } from "@/utils"
 
 export default defineBackground(() => {
   // 设置开发环境徽标
@@ -496,6 +497,37 @@ async function handleReadStorage(
       timestamp: Date.now(),
     };
     await browser.storage.local.set({ lastReadUnified: stored });
+
+    // 读取 personInfo（用户名/用户编号），并记录最近 10 条读取历史
+    try {
+      const personInfoRes = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => window.localStorage.getItem("personInfo"),
+        world: "MAIN",
+      });
+      const personInfoRaw = personInfoRes?.[0]?.result as string | null | undefined;
+      if (typeof personInfoRaw === "string" && personInfoRaw.trim() !== "") {
+        const parsed = JSON.parse(personInfoRaw) as { staffName?: unknown; staffCode?: unknown };
+        const staffName = typeof parsed.staffName === "string" ? parsed.staffName : "";
+        const staffCode = typeof parsed.staffCode === "string" ? parsed.staffCode : "";
+        if (staffCode) {
+          const record: ReadHistoryRecord = {
+            id: staffCode,
+            staffName: staffName || staffCode,
+            staffCode,
+            sourceUrl,
+            timestamp: stored.timestamp,
+            items,
+          };
+          const result = await browser.storage.local.get("readHistory");
+          const history = (result.readHistory || []) as ReadHistoryRecord[];
+          const next = upsertReadHistory(history, record, 10);
+          await browser.storage.local.set({ readHistory: next });
+        }
+      }
+    } catch (error) {
+      console.warn("[StorageDevTools][background] handleReadStorage: failed to save readHistory", error);
+    }
 
     console.log("[StorageDevTools][background] handleReadStorage: done", {
       itemCount: items.length,

@@ -99,6 +99,24 @@ export interface StoredUnifiedInfo {
 }
 
 /**
+ * 读取历史记录（用于在 Popup 中快速切换“写入数据”的来源）
+ */
+export interface ReadHistoryRecord {
+  /** 记录唯一标识：用户编号（staffCode） */
+  id: string;
+  /** 用户名（staffName） */
+  staffName: string;
+  /** 用户编号（staffCode） */
+  staffCode: string;
+  /** 本次读取时所在页面 URL */
+  sourceUrl: string;
+  /** 读取时间戳（ms） */
+  timestamp: number;
+  /** 本次读取到的存储数据 */
+  items: UnifiedStorageItem[];
+}
+
+/**
  * 源网站 URL 配置
  */
 export interface SourceUrlConfig {

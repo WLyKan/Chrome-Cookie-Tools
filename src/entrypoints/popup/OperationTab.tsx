@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { StorageConfig, UnifiedStorageItem } from "@/types";
+import type { ReadHistoryRecord, StorageConfig, UnifiedStorageItem } from "@/types";
 import { MessageType } from "@/types";
 import { Download, Upload, Database } from "lucide-react";
 import { toast } from "sonner";
@@ -11,11 +11,14 @@ export function OperationTab() {
   const [config, setConfig] = useState<StorageConfig | null>(null);
   const [currentTab, setCurrentTab] = useState<{ url: string; title: string } | null>(null);
   const [items, setItems] = useState<UnifiedStorageItem[]>([]);
+  const [historyRecords, setHistoryRecords] = useState<ReadHistoryRecord[]>([]);
+  const [activeHistoryId, setActiveHistoryId] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadConfig();
     getCurrentTab();
+    loadReadHistory();
   }, []);
 
   useEffect(() => {
@@ -67,6 +70,17 @@ export function OperationTab() {
     }
   };
 
+  const loadReadHistory = async (options?: { setActiveFirst?: boolean }) => {
+    try {
+      const result = await browser.storage.local.get("readHistory");
+      const list = (result.readHistory || []) as ReadHistoryRecord[];
+      setHistoryRecords(Array.isArray(list) ? list : []);
+      if (options?.setActiveFirst && list?.length) setActiveHistoryId(list[0].id);
+    } catch (error) {
+      console.error("Failed to load read history:", error);
+    }
+  };
+
   const handleReadData = async () => {
     if (!config) {
       toast.error("请先设置需要获取的存储键名");
@@ -96,6 +110,7 @@ export function OperationTab() {
 
       if (response.success && response.data) {
         setItems(response.data);
+        await loadReadHistory({ setActiveFirst: true });
         if (response.data.length === 0) {
           toast.info("未找到任何数据");
         } else {
@@ -110,6 +125,12 @@ export function OperationTab() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleActivateRecord = (record: ReadHistoryRecord) => {
+    setActiveHistoryId(record.id);
+    setItems(record.items || []);
+    toast.info(`已激活：${record.staffName}（${record.staffCode}）`);
   };
 
   const handleWriteData = async () => {
@@ -221,7 +242,7 @@ export function OperationTab() {
         )}
 
         {/* 固定在底部的操作区：读取 / 写入 数据 */}
-        <div className="sticky bottom-0 left-0 pt-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="sticky bottom-0 left-0 pt-2 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
           <div className="flex gap-2">
             <Button
               onClick={handleReadData}
@@ -243,6 +264,42 @@ export function OperationTab() {
             </Button>
           </div>
         </div>
+
+        {historyRecords.length > 0 && (
+          <div className="border border-border rounded-md">
+            <div className="px-2 py-1 text-xs text-muted-foreground border-b border-border">
+              历史记录（最近 {Math.min(10, historyRecords.length)} 条）
+            </div>
+            <div className="max-h-40 overflow-y-auto">
+              {historyRecords.map((r) => {
+                const active = r.id === activeHistoryId;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => handleActivateRecord(r)}
+                    className={[
+                      "w-full text-left px-2 py-2 border-b border-border last:border-b-0 hover:bg-muted/50",
+                      active ? "bg-muted" : "",
+                    ].join(" ")}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium truncate">
+                        {r.staffName}（{r.staffCode}）
+                      </div>
+                      <div className="text-[10px] text-muted-foreground shrink-0">
+                        {new Date(r.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 truncate">
+                      {r.items?.length ?? 0} 条 · {r.sourceUrl}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
