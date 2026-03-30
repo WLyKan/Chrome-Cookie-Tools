@@ -102,13 +102,13 @@ export interface StoredUnifiedInfo {
  * 读取历史记录（用于在 Popup 中快速切换“写入数据”的来源）
  */
 export interface ReadHistoryRecord {
-  /** 记录唯一标识：用户编号（staffCode） */
+  /** 由「站点 origin + staffCode」派生的稳定 id，用于列表 key 与去重 */
   id: string;
   /** 用户名（staffName） */
   staffName: string;
   /** 用户编号（staffCode） */
   staffCode: string;
-  /** 本次读取时所在页面 URL */
+  /** 本次读取时的页面完整 URL；是否与同工号上一条合并由 URL 的 origin 决定 */
   sourceUrl: string;
   /** 读取时间戳（ms） */
   timestamp: number;

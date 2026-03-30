@@ -2,10 +2,17 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { ReadHistoryRecord, StorageConfig, UnifiedStorageItem } from "@/types";
+import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorageItem } from "@/types";
 import { MessageType } from "@/types";
+import { normalizeReadHistoryOrigin } from "@/utils/readHistory";
 import { Download, Upload, Database } from "lucide-react";
 import { toast } from "sonner";
+
+/** 历史行内展示：各存储项 key=value，分号连接 */
+function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
+  if (!items?.length) return "";
+  return items.map((it) => `${it.key}=${it.value}`).join("; ");
+}
 
 export function OperationTab() {
   const [config, setConfig] = useState<StorageConfig | null>(null);
@@ -61,7 +68,7 @@ export function OperationTab() {
       const stored = result.lastReadUnified as { items?: UnifiedStorageItem[] } | undefined;
       if (stored?.items?.length) {
         setItems(stored.items);
-        toast.info(`已加载上次保存的 ${stored.items.length} 条数据`);
+        // toast.info(`已加载上次保存的 ${stored.items.length} 条数据`);
       } else {
         setItems([]);
       }
@@ -127,10 +134,22 @@ export function OperationTab() {
     }
   };
 
-  const handleActivateRecord = (record: ReadHistoryRecord) => {
+  const handleActivateRecord = async (record: ReadHistoryRecord) => {
+    const nextItems = record.items || [];
     setActiveHistoryId(record.id);
-    setItems(record.items || []);
-    toast.info(`已激活：${record.staffName}（${record.staffCode}）`);
+    setItems(nextItems);
+    try {
+      const stored: StoredUnifiedInfo = {
+        items: nextItems,
+        sourceUrl: record.sourceUrl,
+        timestamp: record.timestamp,
+      };
+      await browser.storage.local.set({ lastReadUnified: stored });
+      toast.info(`已激活：${record.staffName}（${record.staffCode}）`);
+    } catch (error) {
+      console.error("Failed to persist lastReadUnified:", error);
+      toast.error("已切换数据，但未写入本地缓存");
+    }
   };
 
   const handleWriteData = async () => {
@@ -187,16 +206,10 @@ export function OperationTab() {
       <CardContent className="space-y-4 pb-2">
         {config && (
           <div className="bg-muted/50 dark:bg-muted/20 p-3 rounded-md space-y-1 text-sm">
-            <div className="flex items-start">
+            <div className="flex min-w-0 items-center gap-1">
               <span className="font-medium w-[90px] pr-1 shrink-0">当前网址:</span>
               <span
-                className="text-muted-foreground break-all"
-                style={{
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }}
+                className="min-w-0 flex-1 truncate text-muted-foreground"
                 title={currentTab?.url || undefined}
               >
                 {currentTab?.url || "--"}
@@ -273,13 +286,20 @@ export function OperationTab() {
             <div className="max-h-40 overflow-y-auto">
               {historyRecords.map((r) => {
                 const active = r.id === activeHistoryId;
+                const origin = normalizeReadHistoryOrigin(r.sourceUrl);
+                const itemsSummary = formatHistoryRecordItemsSummary(r.items);
+                const historyDetailLine = [
+                  `${r.items?.length ?? 0} 条`,
+                  origin,
+                  ...(itemsSummary ? [itemsSummary] : []),
+                ].join(" · ");
                 return (
                   <button
                     key={r.id}
                     type="button"
                     onClick={() => handleActivateRecord(r)}
                     className={[
-                      "w-full text-left px-2 py-2 border-b border-border last:border-b-0 hover:bg-muted/50",
+                      "w-full min-w-0 text-left px-2 py-2 border-b border-border last:border-b-0 hover:bg-muted/50",
                       active ? "bg-muted" : "",
                     ].join(" ")}
                   >
@@ -291,8 +311,11 @@ export function OperationTab() {
                         {new Date(r.timestamp).toLocaleString()}
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1 truncate">
-                      {r.items?.length ?? 0} 条 · {r.sourceUrl}
+                    <div
+                      className="mt-1 min-w-0 w-full truncate text-left text-xs text-muted-foreground"
+                      title={itemsSummary || undefined}
+                    >
+                      {historyDetailLine}
                     </div>
                   </button>
                 );

@@ -21,7 +21,8 @@ import type {
   ReadHistoryRecord,
 } from "@/types";
 import { DEFAULT_STORAGE_CONFIG, DEFAULT_TYPE } from "@/types";
-import { objectToKeyValues, upsertReadHistory } from "@/utils"
+import { objectToKeyValues } from "@/utils";
+import upsertReadHistory, { getReadHistoryRecordId } from "@/utils/readHistory";
 
 export default defineBackground(() => {
   // 设置开发环境徽标
@@ -512,7 +513,7 @@ async function handleReadStorage(
         const staffCode = typeof parsed.staffCode === "string" ? parsed.staffCode : "";
         if (staffCode) {
           const record: ReadHistoryRecord = {
-            id: staffCode,
+            id: getReadHistoryRecordId(sourceUrl, staffCode),
             staffName: staffName || staffCode,
             staffCode,
             sourceUrl,
