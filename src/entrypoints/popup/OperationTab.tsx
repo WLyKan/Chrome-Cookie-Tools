@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/components/ui/toast";
 import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorageItem } from "@/types";
 import { MessageType } from "@/types";
 import { normalizeReadHistoryOrigin } from "@/utils/readHistory";
 import { Download, Upload, Database } from "lucide-react";
-import { toast } from "sonner";
 
 /** 历史行内展示：各存储项 key=value，分号连接 */
 function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
@@ -21,6 +21,17 @@ export function OperationTab() {
   const [historyRecords, setHistoryRecords] = useState<ReadHistoryRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const activeRecord = historyRecords.find((r) => r.id === activeHistoryId);
+  const storageKeys = Array.isArray(config?.storageKeys) ? config.storageKeys : [];
+  const currentDataDomainWithPort = (() => {
+    const sourceUrl = activeRecord?.sourceUrl || currentTab?.url || "";
+    if (!sourceUrl) return "--";
+    try {
+      return new URL(sourceUrl).host || "--";
+    } catch {
+      return "--";
+    }
+  })();
 
   useEffect(() => {
     loadConfig();
@@ -82,7 +93,7 @@ export function OperationTab() {
       const result = await browser.storage.local.get("readHistory");
       const list = (result.readHistory || []) as ReadHistoryRecord[];
       setHistoryRecords(Array.isArray(list) ? list : []);
-      if (options?.setActiveFirst && list?.length) setActiveHistoryId(list[0].id);
+      if ((options?.setActiveFirst || !activeHistoryId) && list?.length) setActiveHistoryId(list[0].id);
     } catch (error) {
       console.error("Failed to load read history:", error);
     }
@@ -204,29 +215,17 @@ export function OperationTab() {
         <CardDescription>读取并写入存储数据到当前标签页</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pb-2">
-        {config && (
-          <div className="bg-muted/50 dark:bg-muted/20 p-3 rounded-md space-y-1 text-sm">
-            <div className="flex min-w-0 items-center gap-1">
-              <span className="font-medium w-[90px] pr-1 shrink-0">当前网址:</span>
-              <span
-                className="min-w-0 flex-1 truncate text-muted-foreground"
-                title={currentTab?.url || undefined}
-              >
-                {currentTab?.url || "--"}
-              </span>
+        <div className="space-y-2">
+          <Label>存储数据（{activeRecord ? `${activeRecord.staffName} ${activeRecord.staffCode}` : "--"}）({items.length})</Label>
+          <div className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground space-y-1">
+            <div className="truncate" title={currentDataDomainWithPort}>
+              主域名/端口：{currentDataDomainWithPort}
             </div>
-            <div className="flex items-start">
-              <span className="font-medium w-[90px] pr-1 shrink-0">存储键:</span>
-              <span className="text-muted-foreground whitespace-pre-wrap">
-                {Array.isArray(config.storageKeys) ? config.storageKeys.join("\n") : config.storageKeys || "--"}
-              </span>
+            <div className="break-all">
+              存储键：{storageKeys.length > 0 ? storageKeys.join(", ") : "--"}
             </div>
           </div>
-        )}
-
-        {items.length > 0 && (
-          <div className="space-y-2">
-            <Label>存储数据 ({items.length})</Label>
+          {items.length > 0 ? (
             <div className="max-h-40 overflow-y-auto border border-border rounded-md">
               {items.map((item, index) => (
                 <div
@@ -251,8 +250,12 @@ export function OperationTab() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="border border-border rounded-md px-3 py-4 text-xs text-muted-foreground">
+              暂无已读取的存储数据，请先点击“读取数据”
+            </div>
+          )}
+        </div>
 
         {/* 固定在底部的操作区：读取 / 写入 数据 */}
         <div className="sticky bottom-0 left-0 pt-2 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
@@ -281,7 +284,7 @@ export function OperationTab() {
         {historyRecords.length > 0 && (
           <div className="border border-border rounded-md">
             <div className="px-2 py-1 text-xs text-muted-foreground border-b border-border">
-              历史记录（最近 {Math.min(10, historyRecords.length)} 条）
+              历史记录（最多 20 条）
             </div>
             <div className="max-h-40 overflow-y-auto">
               {historyRecords.map((r) => {

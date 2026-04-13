@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/components/ui/toast";
 import type { StorageConfig, StorageType } from "@/types";
 import { DEFAULT_TYPE, MessageType } from "@/types";
 import Table, { TableItem } from "@/components/Table";
-import { toast } from "sonner";
 
 interface ConfigTabProps {
   onConfigSaved?: () => void;

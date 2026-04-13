@@ -43,7 +43,7 @@ function isSameReadHistorySlot(a: ReadHistoryRecord, b: ReadHistoryRecord): bool
 export default function upsertReadHistory(
   history: ReadHistoryRecord[],
   record: ReadHistoryRecord,
-  max: number = 10,
+  max: number = 20,
 ): ReadHistoryRecord[] {
   const normalized: ReadHistoryRecord = {
     ...record,

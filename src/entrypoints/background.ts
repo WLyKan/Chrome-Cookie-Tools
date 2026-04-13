@@ -499,7 +499,7 @@ async function handleReadStorage(
     };
     await browser.storage.local.set({ lastReadUnified: stored });
 
-    // 读取 personInfo（用户名/用户编号），并记录最近 10 条读取历史
+    // 读取 personInfo（用户名/用户编号），并记录最近 20 条读取历史
     try {
       const personInfoRes = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -522,7 +522,7 @@ async function handleReadStorage(
           };
           const result = await browser.storage.local.get("readHistory");
           const history = (result.readHistory || []) as ReadHistoryRecord[];
-          const next = upsertReadHistory(history, record, 10);
+          const next = upsertReadHistory(history, record, 20);
           await browser.storage.local.set({ readHistory: next });
         }
       }
@@ -787,7 +787,7 @@ async function handleSaveConfig(
 /**
  * 更新配置历史
  * - 仅使用 browser.storage.local 存储
- * - 保留最近 10 条，按最近使用排序
+ * - 保留最近 20 条，按最近使用排序
  */
 async function updateConfigHistory(config: StorageConfig): Promise<void> {
   try {
@@ -810,8 +810,8 @@ async function updateConfigHistory(config: StorageConfig): Promise<void> {
     };
     history.unshift(newItem);
 
-    // 只保留最近 10 条
-    history = history.slice(0, 10);
+    // 只保留最近 20 条
+    history = history.slice(0, 20);
 
     await browser.storage.local.set({ configHistory: history });
   } catch (error) {
