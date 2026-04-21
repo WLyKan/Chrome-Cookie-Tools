@@ -6,38 +6,13 @@ import { toast } from "@/components/ui/toast";
 import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorageItem } from "@/types";
 import { MessageType } from "@/types";
 import { normalizeReadHistoryHost } from "@/utils/readHistory";
-import { pinyin } from "pinyin-pro";
+import { matchesHistoryQuery } from "@/utils/historySearch";
 import { Download, Upload, Database } from "lucide-react";
 
 /** 历史行内展示：各存储项 source:key=value，分号连接 */
 function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
   if (!items?.length) return "";
   return items.map((it) => `${it.source}:${it.key}=${it.value}`).join("; ");
-}
-
-function normalizeSearchText(text: string): string {
-  return text.trim().toLowerCase().replace(/\s+/g, "");
-}
-
-function getNamePinyin(name: string): string {
-  try {
-    return normalizeSearchText(pinyin(name, { toneType: "none" }));
-  } catch {
-    return "";
-  }
-}
-
-function matchesHistoryQuery(record: ReadHistoryRecord, query: string): boolean {
-  const normalizedQuery = normalizeSearchText(query);
-  if (!normalizedQuery) return true;
-  const staffCode = normalizeSearchText(record.staffCode);
-  const staffName = normalizeSearchText(record.staffName);
-  const staffNamePinyin = getNamePinyin(record.staffName);
-  return (
-    staffCode.includes(normalizedQuery) ||
-    staffName.includes(normalizedQuery) ||
-    staffNamePinyin.includes(normalizedQuery)
-  );
 }
 
 export function OperationTab() {
