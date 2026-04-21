@@ -1,4 +1,4 @@
-import { useState, type FC } from "react";
+import { useEffect, useState, type FC } from "react";
 
 const navLinks = [
   { href: "#features", label: "功能特性" },
@@ -27,9 +27,46 @@ const toolCategories = [
 ];
 
 const GITHUB_REPO_URL = "https://github.com/WLyKan/Chrome-Cookie-Tools";
+const GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/WLyKan/Chrome-Cookie-Tools/releases/latest";
+
+interface GithubReleaseAsset {
+  name: string;
+  browser_download_url: string;
+}
+
+interface GithubReleaseResponse {
+  assets?: GithubReleaseAsset[];
+}
 
 export const App: FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [chromeDownloadUrl, setChromeDownloadUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const loadLatestChromeDownloadUrl = async () => {
+      try {
+        const response = await fetch(GITHUB_LATEST_RELEASE_API, { signal: abortController.signal });
+        if (!response.ok) {
+          throw new Error(`获取 Release 失败: ${response.status}`);
+        }
+        const release = (await response.json()) as GithubReleaseResponse;
+        const chromeAsset = release.assets?.find((asset) => asset.name.endsWith("-chrome.zip"));
+        setChromeDownloadUrl(chromeAsset?.browser_download_url ?? null);
+      } catch (error) {
+        if (abortController.signal.aborted) {
+          return;
+        }
+        console.error("加载 GitHub Release 下载链接失败", error);
+        setChromeDownloadUrl(null);
+      }
+    };
+
+    void loadLatestChromeDownloadUrl();
+
+    return () => abortController.abort();
+  }, []);
 
   return (
     <div className="page">
@@ -181,7 +218,7 @@ export const App: FC = () => {
           <h2 className="section-title">适合这些场景</h2>
           <ul className="scenario-list">
             <li>在 dev.example.com 调好配置，快速同步到 staging.example.com</li>
-            <li>频繁切换不同账号 / 环境，需要快速迁移认证 Token</li>
+            <li>在多个账号间快速切换，避免反复输入账号密码</li>
             <li>团队成员之间共享一组本地配置 key，减少重复配置成本</li>
           </ul>
         </section>
@@ -194,6 +231,11 @@ export const App: FC = () => {
               <ol className="install-steps">
                 <li>
                   打开仓库 <a className="install-link" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">GitHub</a>，进入 Releases 下载最新的扩展压缩包。
+                  {chromeDownloadUrl ? (
+                    <>
+                      {" "}也可 <a className="install-link" href={chromeDownloadUrl} target="_blank" rel="noreferrer">点击直接下载 Chrome 扩展包</a>。
+                    </>
+                  ) : null}
                 </li>
                 <li>解压到本地任意目录（后续不要删除/移动该目录）。</li>
                 <li>打开 Chrome 扩展管理页：<span className="install-kbd">chrome://extensions</span>。</li>
