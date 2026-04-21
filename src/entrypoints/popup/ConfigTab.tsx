@@ -100,7 +100,6 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>配置</CardTitle>
         <CardDescription>设置需要读取的存储数据</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

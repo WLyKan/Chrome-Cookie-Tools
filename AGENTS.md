@@ -10,7 +10,7 @@
 - **包管理**：统一使用 `pnpm`。
 - **技术栈**：WXT + React + TypeScript + Tailwind CSS + Shadcn UI。
 - **代码风格**：
-  - 2 空格缩进，字符串使用双引号。
+  - 以 ./.editorconfig 文件为准
   - 逻辑组件/库：`.ts`；React 组件：`.tsx`。
   - 组件文件名 PascalCase，导出使用 camelCase。
   - 路径别名：`@/` 指向 `src/`；按「标准库 / 第三方 / 本地」分组导入。

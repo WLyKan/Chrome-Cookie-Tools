@@ -5,13 +5,39 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/components/ui/toast";
 import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorageItem } from "@/types";
 import { MessageType } from "@/types";
-import { normalizeReadHistoryOrigin } from "@/utils/readHistory";
+import { normalizeReadHistoryHost } from "@/utils/readHistory";
+import { pinyin } from "pinyin-pro";
 import { Download, Upload, Database } from "lucide-react";
 
-/** 历史行内展示：各存储项 key=value，分号连接 */
+/** 历史行内展示：各存储项 source:key=value，分号连接 */
 function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
   if (!items?.length) return "";
-  return items.map((it) => `${it.key}=${it.value}`).join("; ");
+  return items.map((it) => `${it.source}:${it.key}=${it.value}`).join("; ");
+}
+
+function normalizeSearchText(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function getNamePinyin(name: string): string {
+  try {
+    return normalizeSearchText(pinyin(name, { toneType: "none" }));
+  } catch {
+    return "";
+  }
+}
+
+function matchesHistoryQuery(record: ReadHistoryRecord, query: string): boolean {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  const staffCode = normalizeSearchText(record.staffCode);
+  const staffName = normalizeSearchText(record.staffName);
+  const staffNamePinyin = getNamePinyin(record.staffName);
+  return (
+    staffCode.includes(normalizedQuery) ||
+    staffName.includes(normalizedQuery) ||
+    staffNamePinyin.includes(normalizedQuery)
+  );
 }
 
 export function OperationTab() {
@@ -20,9 +46,14 @@ export function OperationTab() {
   const [items, setItems] = useState<UnifiedStorageItem[]>([]);
   const [historyRecords, setHistoryRecords] = useState<ReadHistoryRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string>("");
+  const [historySearchText, setHistorySearchText] = useState("");
+  const [historySearchOpen, setHistorySearchOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const activeRecord = historyRecords.find((r) => r.id === activeHistoryId);
   const storageKeys = Array.isArray(config?.storageKeys) ? config.storageKeys : [];
+  const filteredHistoryRecords = historyRecords.filter((record) =>
+    matchesHistoryQuery(record, historySearchText),
+  );
   const currentDataDomainWithPort = (() => {
     const sourceUrl = activeRecord?.sourceUrl || currentTab?.url || "";
     if (!sourceUrl) return "--";
@@ -156,15 +187,18 @@ export function OperationTab() {
         timestamp: record.timestamp,
       };
       await browser.storage.local.set({ lastReadUnified: stored });
-      toast.info(`已激活：${record.staffName}（${record.staffCode}）`);
     } catch (error) {
       console.error("Failed to persist lastReadUnified:", error);
       toast.error("已切换数据，但未写入本地缓存");
     }
+    await handleWriteData(nextItems, { activatedRecord: record });
   };
 
-  const handleWriteData = async () => {
-    if (items.length === 0) {
+  const handleWriteData = async (
+    itemsToWrite: UnifiedStorageItem[] = items,
+    options?: { activatedRecord?: ReadHistoryRecord },
+  ) => {
+    if (itemsToWrite.length === 0) {
       toast.error("没有可写入的数据，请先读取");
       return;
     }
@@ -177,24 +211,39 @@ export function OperationTab() {
     try {
       console.log("[StorageDevTools][popup] handleWriteData: send", {
         targetUrl: currentTab.url,
-        items,
+        items: itemsToWrite,
       });
       const response = await browser.runtime.sendMessage({
         type: MessageType.WRITE_STORAGE,
         payload: {
           targetUrl: currentTab.url,
-          items,
+          items: itemsToWrite,
         },
       });
 
       console.log("[StorageDevTools][popup] handleWriteData: response", response);
 
       if (response.success) {
-        const { okCount = 0, failCount = 0 } = response.data ?? {};
+        const {
+          okCount = 0,
+          failCount = 0,
+          cookieFailures = [],
+        } = (response.data ?? {}) as {
+          okCount?: number;
+          failCount?: number;
+          cookieFailures?: string[];
+        };
+        const activatedLabel = options?.activatedRecord
+          ? `已激活：${options.activatedRecord.staffName}（${options.activatedRecord.staffCode}），`
+          : "";
         if (failCount > 0) {
-          toast.info(`成功写入 ${okCount} 条，${failCount} 条失败`);
+          toast.info(`${activatedLabel}成功写入 ${okCount} 条，${failCount} 条失败`);
+          if (cookieFailures.length > 0) {
+            console.warn("[StorageDevTools][popup] cookie write failures", cookieFailures);
+            toast.error(`Cookie写入失败原因：${cookieFailures[0]}`);
+          }
         } else {
-          toast.success(`成功写入 ${okCount} 条数据`);
+          toast.success(`${activatedLabel}成功写入 ${okCount} 条数据`);
         }
       } else {
         toast.error(response.error || "写入失败");
@@ -211,8 +260,71 @@ export function OperationTab() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>操作</CardTitle>
         <CardDescription>读取并写入存储数据到当前标签页</CardDescription>
+        <div className="relative">
+          <input
+            type="text"
+            value={historySearchText}
+            onFocus={() => setHistorySearchOpen(true)}
+            onBlur={() => {
+              setTimeout(() => setHistorySearchOpen(false), 120);
+            }}
+            onChange={(event) => {
+              setHistorySearchText(event.target.value);
+              setHistorySearchOpen(true);
+            }}
+            placeholder="搜索历史（工号/姓名/拼音），历史记录（最多 100 条）"
+            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          {historySearchOpen && (
+            <div className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+              {filteredHistoryRecords.length > 0 ? (
+                filteredHistoryRecords.map((r) => {
+                  const active = r.id === activeHistoryId;
+                  const host = normalizeReadHistoryHost(r.sourceUrl);
+                  const itemsSummary = formatHistoryRecordItemsSummary(r.items);
+                  const historyDetailLine = [
+                    `${r.items?.length ?? 0} 条`,
+                    host,
+                    ...(itemsSummary ? [itemsSummary] : []),
+                  ].join(" · ");
+                  return (
+                    <button
+                      key={`search-${r.id}`}
+                      type="button"
+                      onClick={() => {
+                        setHistorySearchText(`${r.staffName} ${r.staffCode}`);
+                        setHistorySearchOpen(false);
+                        void handleActivateRecord(r);
+                      }}
+                      className={[
+                        "w-full min-w-0 border-b border-border px-2 py-2 text-left last:border-b-0 hover:bg-muted/50",
+                        active ? "bg-muted" : "",
+                      ].join(" ")}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="truncate text-sm font-medium">
+                          {r.staffName}（{r.staffCode}）
+                        </div>
+                        <div className="shrink-0 text-[10px] text-muted-foreground">
+                          {new Date(r.timestamp).toLocaleString()}
+                        </div>
+                      </div>
+                      <div
+                        className="mt-1 min-w-0 w-full truncate text-left text-xs text-muted-foreground"
+                        title={itemsSummary || undefined}
+                      >
+                        {historyDetailLine}
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-2 py-2 text-xs text-muted-foreground">没有匹配的历史记录</div>
+              )}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4 pb-2">
         <div className="space-y-2">
@@ -221,9 +333,7 @@ export function OperationTab() {
             <div className="truncate" title={currentDataDomainWithPort}>
               主域名/端口：{currentDataDomainWithPort}
             </div>
-            <div className="break-all">
-              存储键：{storageKeys.length > 0 ? storageKeys.join(", ") : "--"}
-            </div>
+            <div>提示：同名 key 可能存在多个来源，写入时会按来源分别写回</div>
           </div>
           {items.length > 0 ? (
             <div className="max-h-40 overflow-y-auto border border-border rounded-md">
@@ -270,7 +380,9 @@ export function OperationTab() {
               {loading ? "读取中..." : "读取数据"}
             </Button>
             <Button
-              onClick={handleWriteData}
+              onClick={() => {
+                void handleWriteData();
+              }}
               disabled={loading || items.length === 0 || !currentTab}
               className="flex-1"
               variant="default"
@@ -284,12 +396,12 @@ export function OperationTab() {
         {historyRecords.length > 0 && (
           <div className="border border-border rounded-md">
             <div className="px-2 py-1 text-xs text-muted-foreground border-b border-border">
-              历史记录（最多 20 条）
+              历史记录（最多 100 条）
             </div>
             <div className="max-h-40 overflow-y-auto">
               {historyRecords.map((r) => {
                 const active = r.id === activeHistoryId;
-                const origin = normalizeReadHistoryOrigin(r.sourceUrl);
+                const origin = normalizeReadHistoryHost(r.sourceUrl);
                 const itemsSummary = formatHistoryRecordItemsSummary(r.items);
                 const historyDetailLine = [
                   `${r.items?.length ?? 0} 条`,

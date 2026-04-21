@@ -22,6 +22,10 @@ import type {
 } from "@/types";
 import { DEFAULT_STORAGE_CONFIG, DEFAULT_TYPE } from "@/types";
 import { objectToKeyValues } from "@/utils";
+import {
+  extractIdentityFromPersonInfoRaw,
+  extractIdentityFromStorageItems,
+} from "@/utils/identity";
 import upsertReadHistory, { getReadHistoryRecordId } from "@/utils/readHistory";
 
 export default defineBackground(() => {
@@ -209,7 +213,6 @@ async function handleWriteCookies(
           url: targetUrl,
           name: cookie.name,
           value: cookie.value,
-          domain: cookie.domain || domain,
           path: cookie.path || "/",
           secure: cookie.secure ?? url.protocol === "https:",
           httpOnly: cookie.httpOnly ?? false,
@@ -377,7 +380,7 @@ async function handleWriteLocalStorage(
 }
 
 /**
- * 统一读取：按 key 在 localStorage → sessionStorage → cookie 中取第一个匹配
+ * 统一读取：按 key 收集 localStorage / sessionStorage / cookie 的所有匹配
  */
 async function handleReadStorage(
   request: ReadStorageRequest
@@ -468,18 +471,16 @@ async function handleReadStorage(
       cookieKeys: Object.keys(cookieMap),
     });
 
-    // 按 key 顺序，每个 key 取第一个匹配：localStorage → sessionStorage → cookie
+    // 按 key 顺序收集所有匹配：localStorage → sessionStorage → cookie
     const items: UnifiedStorageItem[] = [];
     for (const key of keys) {
       const localVal = local[key];
       if (localVal != null && localVal !== "") {
         items.push({ key, value: localVal, source: "localStorage" });
-        continue;
       }
       const sessionVal = session[key];
       if (sessionVal != null && sessionVal !== "") {
         items.push({ key, value: sessionVal, source: "sessionStorage" });
-        continue;
       }
       const cookie = cookieMap[key];
       if (cookie) {
@@ -499,8 +500,9 @@ async function handleReadStorage(
     };
     await browser.storage.local.set({ lastReadUnified: stored });
 
-    // 读取 personInfo（用户名/用户编号），并记录最近 20 条读取历史
+    // 读取用户身份信息（优先 personInfo，失败时回退到读取结果），并记录最近 100 条读取历史
     try {
+      let identity = extractIdentityFromStorageItems(items);
       const personInfoRes = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => window.localStorage.getItem("personInfo"),
@@ -508,23 +510,27 @@ async function handleReadStorage(
       });
       const personInfoRaw = personInfoRes?.[0]?.result as string | null | undefined;
       if (typeof personInfoRaw === "string" && personInfoRaw.trim() !== "") {
-        const parsed = JSON.parse(personInfoRaw) as { staffName?: unknown; staffCode?: unknown };
-        const staffName = typeof parsed.staffName === "string" ? parsed.staffName : "";
-        const staffCode = typeof parsed.staffCode === "string" ? parsed.staffCode : "";
-        if (staffCode) {
-          const record: ReadHistoryRecord = {
-            id: getReadHistoryRecordId(sourceUrl, staffCode),
-            staffName: staffName || staffCode,
-            staffCode,
-            sourceUrl,
-            timestamp: stored.timestamp,
-            items,
-          };
-          const result = await browser.storage.local.get("readHistory");
-          const history = (result.readHistory || []) as ReadHistoryRecord[];
-          const next = upsertReadHistory(history, record, 20);
-          await browser.storage.local.set({ readHistory: next });
-        }
+        identity = extractIdentityFromPersonInfoRaw(personInfoRaw) || identity;
+      }
+
+      if (identity?.staffCode) {
+        const record: ReadHistoryRecord = {
+          id: getReadHistoryRecordId(sourceUrl, identity.staffCode),
+          staffName: identity.staffName || identity.staffCode,
+          staffCode: identity.staffCode,
+          sourceUrl,
+          timestamp: stored.timestamp,
+          items,
+        };
+        const result = await browser.storage.local.get("readHistory");
+        const history = (result.readHistory || []) as ReadHistoryRecord[];
+        const next = upsertReadHistory(history, record, 100);
+        await browser.storage.local.set({ readHistory: next });
+      } else {
+        console.warn("[StorageDevTools][background] handleReadStorage: skip readHistory save, missing identity", {
+          sourceUrl,
+          itemCount: items.length,
+        });
       }
     } catch (error) {
       console.warn("[StorageDevTools][background] handleReadStorage: failed to save readHistory", error);
@@ -550,7 +556,7 @@ async function handleReadStorage(
  */
 async function handleWriteStorage(
   request: WriteStorageRequest
-): Promise<MessageResponse<{ okCount: number; failCount: number }>> {
+): Promise<MessageResponse<{ okCount: number; failCount: number; cookieFailures?: string[] }>> {
   const { targetUrl, items } = request.payload;
 
   try {
@@ -590,6 +596,7 @@ async function handleWriteStorage(
 
     let okCount = 0;
     let failCount = 0;
+    const cookieFailures: string[] = [];
 
     // 写入 localStorage
     if (localEntries.length > 0) {
@@ -648,36 +655,22 @@ async function handleWriteStorage(
       const hasPermission = await browser.permissions.contains({
         origins: [`${url.protocol}//${domain}/*`],
       });
-      if (!hasPermission) {
+      let canWriteCookies = hasPermission;
+      if (!canWriteCookies) {
         const granted = await browser.permissions.request({
           origins: [`${url.protocol}//${domain}/*`],
         });
-        if (!granted) {
-          failCount += cookieItems.length;
-          console.warn("[StorageDevTools][background] handleWriteStorage: cookie permission denied", {
-            targetUrl,
-            cookieCount: cookieItems.length,
-          });
-        } else {
-          for (const cookie of cookieItems) {
-            try {
-              await browser.cookies.set({
-                url: targetUrl,
-                name: cookie.name,
-                value: cookie.value,
-                domain: cookie.domain || domain,
-                path: cookie.path || "/",
-                secure: cookie.secure ?? url.protocol === "https:",
-                httpOnly: cookie.httpOnly ?? false,
-                sameSite: cookie.sameSite || "lax",
-                expirationDate: cookie.expirationDate,
-              });
-              okCount++;
-            } catch {
-              failCount++;
-            }
-          }
+        canWriteCookies = granted;
+      }
+      if (!canWriteCookies) {
+        failCount += cookieItems.length;
+        for (const cookie of cookieItems) {
+          cookieFailures.push(`cookie ${cookie.name}: 权限被拒绝，目标域 ${domain}`);
         }
+        console.warn("[StorageDevTools][background] handleWriteStorage: cookie permission denied", {
+          targetUrl,
+          cookieCount: cookieItems.length,
+        });
       } else {
         for (const cookie of cookieItems) {
           try {
@@ -685,7 +678,6 @@ async function handleWriteStorage(
               url: targetUrl,
               name: cookie.name,
               value: cookie.value,
-              domain: cookie.domain || domain,
               path: cookie.path || "/",
               secure: cookie.secure ?? url.protocol === "https:",
               httpOnly: cookie.httpOnly ?? false,
@@ -693,8 +685,12 @@ async function handleWriteStorage(
               expirationDate: cookie.expirationDate,
             });
             okCount++;
-          } catch {
+          } catch (error) {
             failCount++;
+            const reason = error instanceof Error ? error.message : String(error);
+            cookieFailures.push(
+              `cookie ${cookie.name}: ${reason} (domain=${cookie.domain || domain}, path=${cookie.path || "/"}, secure=${String(cookie.secure ?? url.protocol === "https:")}, sameSite=${cookie.sameSite || "lax"})`,
+            );
           }
         }
       }
@@ -703,11 +699,12 @@ async function handleWriteStorage(
     console.log("[StorageDevTools][background] handleWriteStorage: done", {
       okCount,
       failCount,
+      cookieFailures,
     });
 
     return {
       success: true,
-      data: { okCount, failCount },
+      data: { okCount, failCount, cookieFailures },
     };
   } catch (error) {
     console.error("Error in handleWriteStorage:", error);

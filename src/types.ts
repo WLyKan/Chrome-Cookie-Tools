@@ -75,11 +75,11 @@ export interface StoredLocalStorageInfo {
   timestamp: number;
 }
 
-/** 统一读取时的数据来源（按匹配顺序：localStorage → sessionStorage → cookie） */
+/** 统一读取时的数据来源（展示顺序：localStorage → sessionStorage → cookie） */
 export type UnifiedStorageSource = "localStorage" | "sessionStorage" | "cookie";
 
 /**
- * 统一存储项：每个 key 从 localStorage / sessionStorage / cookie 中取第一个匹配
+ * 统一存储项：同一个 key 在不同存储来源会分别保存为多条记录
  */
 export interface UnifiedStorageItem {
   key: string;
@@ -122,7 +122,7 @@ export interface ReadHistoryRecord {
 export interface SourceUrlConfig {
   /** 当前使用的源网站 URL */
   current: string;
-  /** 历史记录（最多保留5个） */
+  /** 历史记录（最多保留100个） */
   history: string[];
   updatedAt: number;
 }
@@ -162,7 +162,7 @@ export enum MessageType {
   WRITE_COOKIES = 'WRITE_COOKIES',
   READ_LOCALSTORAGE = 'READ_LOCALSTORAGE',
   WRITE_LOCALSTORAGE = 'WRITE_LOCALSTORAGE',
-  /** 按 key 从 localStorage → sessionStorage → cookie 取第一个匹配 */
+  /** 按 key 收集 localStorage / sessionStorage / cookie 的所有匹配 */
   READ_STORAGE = 'READ_STORAGE',
   /** 按每条数据的 source 写回对应存储 */
   WRITE_STORAGE = 'WRITE_STORAGE',
@@ -230,7 +230,7 @@ export interface WriteLocalStorageRequest extends MessageRequest {
   };
 }
 
-/** 读取存储（localStorage/sessionStorage/cookie 按 key 第一个匹配）请求 */
+/** 读取存储（按 key 收集 localStorage/sessionStorage/cookie 所有匹配）请求 */
 export interface ReadStorageRequest extends MessageRequest {
   type: MessageType.READ_STORAGE;
   payload: {

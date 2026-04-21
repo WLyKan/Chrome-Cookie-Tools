@@ -1,5 +1,9 @@
-import { defineConfig } from 'wxt';
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from "wxt";
+import tailwindcss from "@tailwindcss/vite";
+
+const extensionName = process.env.NODE_ENV === "development"
+  ? "chrome-cookie-tools (DEV)"
+  : "chrome-cookie-tools";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -9,13 +13,14 @@ export default defineConfig({
     ],
     resolve: {
       alias: {
-        '@': '/src',
+        "@": "/src",
       },
     },
   }),
-  modules: ['@wxt-dev/module-react'],
-  srcDir: 'src',
+  modules: ["@wxt-dev/module-react"],
+  srcDir: "src",
   manifest: {
+    name: extensionName,
     permissions: [
       "storage",
       "tabs",

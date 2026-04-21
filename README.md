@@ -11,7 +11,7 @@ This template should help get you started developing with React in WXT.
 - 📋 **配置管理**：自定义源网站URL和需要读取的Cookie名称
 - 📖 **Cookie读取**：从指定源网站读取指定的Cookie
 - ✍️ **Cookie写入**：将读取的Cookie写入到目标网站
-- 🕒 **历史记录**：保存最近5个源网站URL，方便快速切换
+- 🕒 **历史记录**：保存最近100个源网站URL，方便快速切换
 - 🎨 **现代UI**：使用React + Tailwind CSS构建的美观界面
 - 🔒 **权限管理**：动态请求网站访问权限，安全可控
 
