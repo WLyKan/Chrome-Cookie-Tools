@@ -688,6 +688,44 @@ main {
   line-height: 1.6;
 }
 
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.proof-card {
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(186, 230, 253, 0.9);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.proof-meta {
+  display: inline-flex;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #0369a1;
+  background: #e0f2fe;
+  border-radius: 999px;
+  padding: 6px 10px;
+}
+
+.proof-card h3 {
+  margin: 12px 0 8px;
+  font-size: 16px;
+}
+
+.proof-card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+}
+
 /* ========== Install Guide ========== */
 .install-grid {
   display: grid;
@@ -769,6 +807,32 @@ main {
   line-height: 1.6;
 }
 
+.faq-list {
+  display: grid;
+  gap: 10px;
+}
+
+.faq-item {
+  border: 1px solid rgba(186, 230, 253, 0.9);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 12px 14px;
+}
+
+.faq-item summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0c4a6e;
+}
+
+.faq-item p {
+  margin: 10px 0 2px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+}
+
 /* ========== Footer ========== */
 .footer {
   padding: 20px 24px;
@@ -817,6 +881,10 @@ button:focus-visible,
   }
 
   .workflow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .proof-grid {
     grid-template-columns: 1fr;
   }
 }

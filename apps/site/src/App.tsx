@@ -37,7 +37,7 @@ const trustPoints = [
 
 const featureCards = [
   {
-    title: "30 秒跨环境同步",
+    title: "1 秒跨环境同步",
     desc: "将 dev 里调好的登录态和配置快速同步到 test / staging，避免重复登录与重复配置。",
   },
   {
@@ -62,6 +62,39 @@ const workflowSteps = [
   {
     title: "同步",
     desc: "一键写入目标环境，快速恢复登录态",
+  },
+];
+
+const proofItems = [
+  {
+    title: "开源仓库可审计",
+    desc: "核心读写与权限逻辑公开透明，团队可二次审查。",
+    meta: "GitHub Public Repo",
+  },
+  {
+    title: "全链路本地处理",
+    desc: "敏感数据只在浏览器本地流转，不落地到第三方服务。",
+    meta: "Local-First",
+  },
+  {
+    title: "按需授权机制",
+    desc: "仅在需要时申请站点权限，降低误授权和误写风险。",
+    meta: "Least Privilege",
+  },
+];
+
+const faqItems = [
+  {
+    question: "数据会上传到云端吗？",
+    answer: "不会。核心读写与同步均在浏览器本地完成，默认不会发送到第三方服务器。",
+  },
+  {
+    question: "为什么需要站点权限？",
+    answer: "扩展需要在目标站点读写 Cookie 或 LocalStorage，权限仅用于你授权的站点范围。",
+  },
+  {
+    question: "支持哪些环境切换场景？",
+    answer: "适用于 dev、test、staging 等多环境调试，尤其适合登录态和配置 key 的迁移。",
   },
 ];
 
@@ -143,6 +176,23 @@ export const App: FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [chromeDownloadUrl, setChromeDownloadUrl] = useState<string | null>(null);
 
+  const trackEvent = (eventName: string, metadata?: Record<string, string>) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const payload = { eventName, page: "site-home", ...metadata };
+    const body = JSON.stringify(payload);
+
+    if ("sendBeacon" in navigator) {
+      const blob = new Blob([body], { type: "application/json" });
+      void navigator.sendBeacon("/analytics/site-events", blob);
+      return;
+    }
+
+    console.info("[site-event]", payload);
+  };
+
   useEffect(() => {
     const abortController = new AbortController();
 
@@ -174,7 +224,7 @@ export const App: FC = () => {
       <nav className="navbar">
         <div className="navbar-inner">
           <a href="#" className="navbar-logo">
-            <span className="logo-icon">SD</span>
+            <span className="logo-icon">SDT</span>
             <span className="logo-text">Storage Dev Tools</span>
           </a>
           <div className="navbar-links">
@@ -188,7 +238,13 @@ export const App: FC = () => {
             <a href="#install" className="btn-nav-outline">
               立即安装
             </a>
-            <a href={GITHUB_REPO_URL} className="btn-nav-github" target="_blank" rel="noreferrer">
+            <a
+              href={GITHUB_REPO_URL}
+              className="btn-nav-github"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => trackEvent("github_click", { source: "navbar" })}
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-1.23-3.795-1.23-.54-1.38-1.335-1.755-1.335-1.755-1.08-.75.09-.735.09-.735 1.2.09 1.83 1.23 1.83 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
               </svg>
@@ -202,7 +258,7 @@ export const App: FC = () => {
         <div className="hero-inner container">
           <div className="hero-left">
             <h1 className="hero-title">
-              30 秒完成
+              1 秒完成
               <span className="hero-title-highlight">跨环境存储同步</span>
             </h1>
             <p className="hero-desc">
@@ -217,15 +273,23 @@ export const App: FC = () => {
               ))}
             </div>
             <div className="hero-actions">
-              <a href="#install" className="btn-primary">
+              <a
+                href="#install"
+                className="btn-primary"
+                onClick={() => trackEvent("install_cta_click", { source: "hero_primary" })}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                立即安装
+                立即安装（30 秒）
               </a>
-              <a href="#features" className="btn-secondary">
+              <a
+                href="#features"
+                className="btn-secondary"
+                onClick={() => trackEvent("features_cta_click", { source: "hero_secondary" })}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
@@ -351,6 +415,19 @@ export const App: FC = () => {
           </div>
         </section>
 
+        <section className="section">
+          <h2 className="section-title">为什么可信</h2>
+          <div className="proof-grid">
+            {proofItems.map((item) => (
+              <article key={item.title} className="proof-card">
+                <span className="proof-meta">{item.meta}</span>
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section id="install" className="section">
           <h2 className="section-title">本地安装教程</h2>
           <div className="install-grid">
@@ -358,10 +435,30 @@ export const App: FC = () => {
               <h3 className="install-title">方式一：从 GitHub Releases 安装（推荐）</h3>
               <ol className="install-steps">
                 <li>
-                  打开仓库 <a className="install-link" href={GITHUB_REPO_URL} target="_blank" rel="noreferrer">GitHub</a>，进入 Releases 下载最新的扩展压缩包。
+                  打开仓库{" "}
+                  <a
+                    className="install-link"
+                    href={GITHUB_REPO_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => trackEvent("github_click", { source: "install_section" })}
+                  >
+                    GitHub
+                  </a>
+                  ，进入 Releases 下载最新的扩展压缩包。
                   {chromeDownloadUrl ? (
                     <>
-                      {" "}也可 <a className="install-link" href={chromeDownloadUrl} target="_blank" rel="noreferrer">点击直接下载 Chrome 扩展包</a>。
+                      {" "}也可{" "}
+                      <a
+                        className="install-link"
+                        href={chromeDownloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => trackEvent("direct_download_click", { source: "install_section" })}
+                      >
+                        点击直接下载 Chrome 扩展包
+                      </a>
+                      。
                     </>
                   ) : null}
                 </li>
@@ -393,6 +490,18 @@ pnpm build`}</code>
                 如果提示缺少权限或 Cookie 相关 API 不可用，请确认已在弹窗里授权对应站点权限，并在扩展详情页中检查「网站访问权限」设置。
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="section section-muted">
+          <h2 className="section-title">常见问题</h2>
+          <div className="faq-list">
+            {faqItems.map((item) => (
+              <details key={item.question} className="faq-item">
+                <summary>{item.question}</summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
           </div>
         </section>
       </main>
