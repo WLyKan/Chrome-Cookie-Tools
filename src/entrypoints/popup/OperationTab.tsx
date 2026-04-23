@@ -7,7 +7,7 @@ import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorag
 import { MessageType } from "@/types";
 import { normalizeReadHistoryHost } from "@/utils/readHistory";
 import { matchesHistoryQuery } from "@/utils/historySearch";
-import { Download, Upload, Database } from "lucide-react";
+import { Download, Upload, Database, Search } from "lucide-react";
 
 /** 历史行内展示：各存储项 source:key=value，分号连接 */
 function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
@@ -237,6 +237,8 @@ export function OperationTab() {
       <CardHeader>
         <CardDescription>读取并写入存储数据到当前标签页</CardDescription>
         <div className="relative">
+          <div className="pointer-events-none absolute inset-0 rounded-lg bg-linear-to-r from-blue-500/12 via-violet-500/8 to-fuchsia-500/12 opacity-0 transition-opacity duration-200 peer-focus-within:opacity-100" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-3.5 w-3.5 -translate-y-1/2 text-blue-500/85 transition-colors duration-200 peer-focus-within:text-violet-500" />
           <input
             type="text"
             value={historySearchText}
@@ -249,10 +251,10 @@ export function OperationTab() {
               setHistorySearchOpen(true);
             }}
             placeholder="搜索历史（工号/姓名/拼音），历史记录（最多 100 条）"
-            className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="peer h-9 w-full rounded-lg border border-blue-200/70 bg-linear-to-r from-blue-50/70 via-background to-violet-50/60 pr-3 pl-8 text-xs text-foreground placeholder:text-muted-foreground transition-all duration-200 hover:border-violet-300/65 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/25 focus-visible:border-violet-400/60 dark:border-blue-400/35 dark:from-blue-500/10 dark:to-violet-500/10 dark:hover:border-violet-400/55"
           />
           {historySearchOpen && (
-            <div className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md">
+            <div className="absolute z-20 mt-1.5 max-h-44 w-full overflow-y-auto rounded-lg border border-violet-300/40 bg-popover/95 shadow-xl shadow-violet-500/10 backdrop-blur-sm dark:border-blue-400/30">
               {filteredHistoryRecords.length > 0 ? (
                 filteredHistoryRecords.map((r) => {
                   const active = r.id === activeHistoryId;
@@ -273,8 +275,8 @@ export function OperationTab() {
                         void handleActivateRecord(r);
                       }}
                       className={[
-                        "w-full min-w-0 border-b border-border px-2 py-2 text-left last:border-b-0 hover:bg-muted/50",
-                        active ? "bg-muted" : "",
+                        "w-full min-w-0 border-b border-border/60 px-2.5 py-2 text-left transition-colors duration-150 last:border-b-0 hover:bg-violet-500/10",
+                        active ? "bg-linear-to-r from-blue-500/12 to-violet-500/16 hover:from-blue-500/16 hover:to-violet-500/22" : "",
                       ].join(" ")}
                     >
                       <div className="flex items-center justify-between gap-2">

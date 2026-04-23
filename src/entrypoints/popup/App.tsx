@@ -10,7 +10,7 @@ function App() {
   const isDev = import.meta.env.DEV;
 
   return (
-    <div className="w-[520px] h-[680px] bg-background relative flex flex-col overflow-hidden">
+    <div className="w-[520px] h-[600px] bg-background relative flex flex-col overflow-hidden">
       <Toaster />
       {/* 标题 */}
       <div className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground p-4 flex items-center gap-3">
