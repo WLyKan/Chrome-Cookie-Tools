@@ -22,6 +22,14 @@ const DEFAULT_OPTIONS: ToastOptions = {
   style: BASE_TOAST_STYLE,
 };
 
+const EXTENSION_UPDATE_TOAST_ID = "extension-update-notice";
+
+interface ExtensionUpdateNoticeToastOptions {
+  currentVersion: string;
+  latestVersion: string;
+  releaseUrl?: string;
+}
+
 export function Toaster() {
   return (
     <HotToaster
@@ -77,5 +85,47 @@ export const toast = {
         color: "rgb(146 64 14)",
       },
     }),
+  extensionUpdateNotice: ({
+    currentVersion,
+    latestVersion,
+    releaseUrl,
+  }: ExtensionUpdateNoticeToastOptions) =>
+    hotToast.custom(
+      (toastItem) => (
+        <div className="w-[320px] rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <span className="truncate">
+              发现新版本 v{latestVersion}（当前 v{currentVersion}）
+            </span>
+            <div className="flex shrink-0 items-center gap-1">
+              {releaseUrl && (
+                <button
+                  type="button"
+                  className="cursor-pointer rounded border border-blue-300 bg-white px-2 py-0.5 text-[11px] transition-colors duration-200 hover:bg-blue-100"
+                  onClick={() => {
+                    void browser.tabs.create({ url: releaseUrl });
+                    hotToast.dismiss(toastItem.id);
+                  }}
+                >
+                  查看
+                </button>
+              )}
+              <button
+                type="button"
+                className="cursor-pointer rounded px-1 text-[11px] transition-colors duration-200 hover:bg-blue-100"
+                onClick={() => hotToast.dismiss(toastItem.id)}
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        id: EXTENSION_UPDATE_TOAST_ID,
+        duration: Number.POSITIVE_INFINITY,
+        position: "top-right",
+      },
+    ),
   dismiss: (toastId?: string) => hotToast.dismiss(toastId),
 };

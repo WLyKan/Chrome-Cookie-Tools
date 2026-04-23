@@ -168,6 +168,7 @@ export enum MessageType {
   WRITE_STORAGE = 'WRITE_STORAGE',
   GET_CONFIG = 'GET_CONFIG',
   SAVE_CONFIG = 'SAVE_CONFIG',
+  CHECK_EXTENSION_UPDATE = 'CHECK_EXTENSION_UPDATE',
 }
 
 /**
@@ -246,6 +247,25 @@ export interface WriteStorageRequest extends MessageRequest {
     targetUrl: string;
     items: UnifiedStorageItem[];
   };
+}
+
+/** 检查扩展更新请求 */
+export interface CheckExtensionUpdateRequest extends MessageRequest {
+  type: MessageType.CHECK_EXTENSION_UPDATE;
+}
+
+/** 更新检查结果 */
+export interface ExtensionUpdateInfo {
+  /** 当前扩展版本（来自 manifest） */
+  currentVersion: string;
+  /** GitHub 最新稳定版本（tag_name） */
+  latestVersion: string;
+  /** 是否存在新版本 */
+  hasUpdate: boolean;
+  /** 发布详情页 */
+  releaseUrl?: string;
+  /** 检查时间（ms） */
+  checkedAt: number;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { TableItem } from "@/components/Table";
 import dayjs from "dayjs";
 import type {
+  ExtensionUpdateInfo,
   ReadCookiesRequest,
   WriteCookiesRequest,
   ReadLocalStorageRequest,
@@ -8,6 +9,7 @@ import type {
   ReadStorageRequest,
   WriteStorageRequest,
   SaveConfigRequest,
+  CheckExtensionUpdateRequest,
   MessageResponse,
   CookieData,
   StorageConfig,
@@ -49,6 +51,11 @@ function bgWarnDev(...args: unknown[]) {
   if (import.meta.env.DEV) console.warn(...args);
 }
 
+const GITHUB_LATEST_RELEASE_API =
+  "https://api.github.com/repos/WLyKan/Chrome-Cookie-Tools/releases/latest";
+const GITHUB_LATEST_RELEASE_PAGE =
+  "https://github.com/WLyKan/Chrome-Cookie-Tools/releases/latest";
+
 export default defineBackground(() => {
   if (import.meta.env.DEV) {
     chrome.action.setBadgeText({ text: "DEV" });
@@ -65,6 +72,7 @@ export default defineBackground(() => {
  * 处理消息路由
  */
 async function handleMessage(message: any): Promise<MessageResponse> {
+  console.log("handleMessage", message);
   try {
     switch (message.type) {
       case MessageType.READ_COOKIES:
@@ -83,6 +91,10 @@ async function handleMessage(message: any): Promise<MessageResponse> {
         return await handleReadStorage(message as ReadStorageRequest);
       case MessageType.WRITE_STORAGE:
         return await handleWriteStorage(message as WriteStorageRequest);
+      case MessageType.CHECK_EXTENSION_UPDATE:
+        return await handleCheckExtensionUpdate(
+          message as CheckExtensionUpdateRequest,
+        );
       default:
         return {
           success: false,
@@ -94,6 +106,121 @@ async function handleMessage(message: any): Promise<MessageResponse> {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+interface GithubLatestReleaseResponse {
+  tag_name?: string;
+  html_url?: string;
+  prerelease?: boolean;
+  draft?: boolean;
+}
+
+function extractVersionFromReleaseUrl(url: string): string | null {
+  const tagMatch = url.match(/\/releases\/tag\/([^/?#]+)/i);
+  if (!tagMatch?.[1]) {
+    return null;
+  }
+  return normalizeSemver(decodeURIComponent(tagMatch[1]));
+}
+
+function normalizeSemver(version: string): string {
+  return version.trim().replace(/^v/i, "");
+}
+
+function compareSemver(a: string, b: string): number {
+  const aParts = normalizeSemver(a).split(".").map((part) => Number(part) || 0);
+  const bParts = normalizeSemver(b).split(".").map((part) => Number(part) || 0);
+  const maxLength = Math.max(aParts.length, bParts.length);
+  for (let i = 0; i < maxLength; i++) {
+    const aNum = aParts[i] ?? 0;
+    const bNum = bParts[i] ?? 0;
+    if (aNum > bNum) return 1;
+    if (aNum < bNum) return -1;
+  }
+  return 0;
+}
+
+/**
+ * 检查扩展更新（对比当前 manifest.version 与 GitHub 最新稳定版）
+ */
+async function handleCheckExtensionUpdate(
+  _request: CheckExtensionUpdateRequest,
+): Promise<MessageResponse<ExtensionUpdateInfo>> {
+  const currentVersion = chrome.runtime.getManifest().version;
+  const checkedAt = Date.now();
+
+  try {
+    const response = await fetch(GITHUB_LATEST_RELEASE_API, {
+      headers: {
+        Accept: "application/vnd.github+json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status !== 403) {
+        return {
+          success: false,
+          error: `检查更新失败：GitHub 响应 ${response.status}`,
+        };
+      }
+
+      // GitHub API 触发限流时，回退到 latest 页面重定向 URL 解析版本号。
+      const fallbackResponse = await fetch(GITHUB_LATEST_RELEASE_PAGE, {
+        redirect: "follow",
+      });
+      const fallbackVersion = extractVersionFromReleaseUrl(fallbackResponse.url);
+      if (!fallbackVersion) {
+        return {
+          success: false,
+          error: "检查更新失败：GitHub API 限流且回退解析失败",
+        };
+      }
+      return {
+        success: true,
+        data: {
+          currentVersion,
+          latestVersion: fallbackVersion,
+          hasUpdate: compareSemver(fallbackVersion, currentVersion) > 0,
+          releaseUrl: fallbackResponse.url || GITHUB_LATEST_RELEASE_PAGE,
+          checkedAt,
+        },
+      };
+    }
+
+    const release = (await response.json()) as GithubLatestReleaseResponse;
+    if (release.draft || release.prerelease) {
+      return {
+        success: false,
+        error: "检查更新失败：未获取到稳定版发布",
+      };
+    }
+
+    if (!release.tag_name) {
+      return {
+        success: false,
+        error: "检查更新失败：缺少版本号",
+      };
+    }
+
+    const latestVersion = normalizeSemver(release.tag_name);
+    const hasUpdate = compareSemver(latestVersion, currentVersion) > 0;
+
+    return {
+      success: true,
+      data: {
+        currentVersion,
+        latestVersion,
+        hasUpdate,
+        releaseUrl: release.html_url,
+        checkedAt,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? `检查更新失败：${error.message}` : "检查更新失败",
     };
   }
 }
