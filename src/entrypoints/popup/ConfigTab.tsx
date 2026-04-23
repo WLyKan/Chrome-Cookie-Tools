@@ -2,7 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
 import type { StorageConfig, StorageType } from "@/types";
 import { DEFAULT_TYPE, MessageType } from "@/types";
@@ -98,33 +104,52 @@ export function ConfigTab({ onConfigSaved }: ConfigTabProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardDescription>设置需要读取的存储数据</CardDescription>
+    <Card className="flex h-full min-h-0 flex-col gap-0 overflow-hidden border-border/80 py-0 shadow-sm ring-1 ring-border/30">
+      <CardHeader className="shrink-0 space-y-1 border-b border-border/60 px-4 pb-4 pt-4">
+        <CardDescription className="text-xs leading-relaxed">
+          设置要读取的键名；保存后在「操作」页对当前标签页生效
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {configHistory.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">历史记录</p>
-            <Table onRowClick={handleSelectFromHistory} data={configHistory} />
-          </div>
-        )}
+      <CardContent className="flex min-h-0 flex-1 flex-col gap-0 px-0 pb-0 pt-0">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-4 py-5">
+          {configHistory.length > 0 && (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-muted/25 p-3">
+              <p className="text-xs font-medium text-foreground/90">最近使用的键名</p>
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                点击表格一行可快速填入并保存
+              </p>
+              <Table onRowClick={handleSelectFromHistory} data={configHistory} />
+            </div>
+          )}
 
-        <div className="space-y-2">
-          <Label htmlFor="storageKeys">存储键名（一行一个）</Label>
-          <Textarea
-            id="storageKeys"
-            placeholder={"REFRESH_TOKEN\ntoken\ntenantId"}
-            value={storageKeysText}
-            onChange={(e) => setStorageKeysText(e.target.value)}
-            rows={5}
-          />
-          <p className="text-xs text-muted-foreground">每行输入一个键名</p>
+          <div className="space-y-2">
+            <Label htmlFor="storageKeys" className="text-sm font-medium text-foreground">
+              存储键名（一行一个）
+            </Label>
+            <Textarea
+              id="storageKeys"
+              placeholder={"REFRESH_TOKEN\ntoken\ntenantId"}
+              value={storageKeysText}
+              onChange={(e) => setStorageKeysText(e.target.value)}
+              rows={5}
+              className="min-h-30 resize-y text-sm motion-reduce:transition-none"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              支持 Cookie 名与 localStorage 键名；与目标页同源时才会读取到值
+            </p>
+          </div>
         </div>
 
-        <Button onClick={() => handleSaveConfig({})} disabled={loading} className="w-full">
-          {loading ? "保存中..." : "保存配置"}
-        </Button>
+        <div className="sticky bottom-0 z-20 shrink-0 border-t border-border/70 bg-background/95 px-4 py-3 shadow-[0_-8px_24px_-10px_rgba(0,0,0,0.1)] backdrop-blur-sm supports-backdrop-filter:bg-background/85 dark:shadow-[0_-8px_24px_-10px_rgba(0,0,0,0.35)]">
+          <Button
+            type="button"
+            onClick={() => handleSaveConfig({})}
+            disabled={loading}
+            className="w-full cursor-pointer shadow-sm transition-colors duration-200 motion-reduce:transition-none"
+          >
+            {loading ? "保存中…" : "保存配置"}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
