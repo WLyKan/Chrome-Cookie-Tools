@@ -10,6 +10,7 @@ import type {
   WriteStorageRequest,
   SaveConfigRequest,
   CheckExtensionUpdateRequest,
+  ClearStorageRequest,
   MessageResponse,
   CookieData,
   StorageConfig,
@@ -31,10 +32,12 @@ import {
   chromeCookieToCookieData,
   ensureEffectiveHostPermission,
   executeStorageBatchWrite,
+  executeStorageBatchRemove,
   hasEffectiveHostPermission,
   originMatchPatternForUrl,
   queryActiveTabInCurrentWindow,
   readSourceHostnameGuard,
+  removeCookiesOnUrl,
   setCookiesOnUrl,
 } from "@/utils/extension-storage-helpers";
 import {
@@ -91,6 +94,8 @@ async function handleMessage(message: any): Promise<MessageResponse> {
         return await handleReadStorage(message as ReadStorageRequest);
       case MessageType.WRITE_STORAGE:
         return await handleWriteStorage(message as WriteStorageRequest);
+      case MessageType.CLEAR_STORAGE:
+        return await handleClearStorage(message as ClearStorageRequest);
       case MessageType.CHECK_EXTENSION_UPDATE:
         return await handleCheckExtensionUpdate(
           message as CheckExtensionUpdateRequest,
@@ -630,6 +635,95 @@ async function handleWriteStorage(
     return {
       success: false,
       error: error instanceof Error ? error.message : "写入失败",
+    };
+  }
+}
+
+/**
+ * 清除当前标签页上的 localStorage / sessionStorage / cookie 数据
+ */
+async function handleClearStorage(
+  request: ClearStorageRequest,
+): Promise<MessageResponse<{ okCount: number; failCount: number; cookieFailures?: string[] }>> {
+  const { targetUrl, items } = request.payload;
+
+  try {
+    bgLog("[StorageDevTools][background] handleClearStorage: start", {
+      targetUrl,
+      itemCount: items.length,
+    });
+
+    if (!items?.length) {
+      return { success: false, error: "没有可清除的数据" };
+    }
+
+    const tab = await queryActiveTabInCurrentWindow();
+    if (!tab?.id || !tab.url) {
+      return { success: false, error: "未找到活动标签页" };
+    }
+
+    const url = new URL(targetUrl);
+
+    const localKeys: string[] = [];
+    const sessionKeys: string[] = [];
+    const cookieNames: string[] = [];
+
+    for (const item of items) {
+      if (item.source === "localStorage") {
+        localKeys.push(item.key);
+      } else if (item.source === "sessionStorage") {
+        sessionKeys.push(item.key);
+      } else if (item.source === "cookie") {
+        cookieNames.push(item.key);
+      }
+    }
+
+    let okCount = 0;
+    let failCount = 0;
+    const cookieFailures: string[] = [];
+
+    if (localKeys.length > 0) {
+      const r = await executeStorageBatchRemove(tab.id, localKeys, "local");
+      okCount += r.ok.length;
+      failCount += r.fail.length;
+    }
+
+    if (sessionKeys.length > 0) {
+      const r = await executeStorageBatchRemove(tab.id, sessionKeys, "session");
+      okCount += r.ok.length;
+      failCount += r.fail.length;
+    }
+
+    if (cookieNames.length > 0) {
+      const canWriteCookies = await ensureEffectiveHostPermission(url);
+      if (!canWriteCookies) {
+        failCount += cookieNames.length;
+        for (const name of cookieNames) {
+          cookieFailures.push(`cookie ${name}: 权限被拒绝`);
+        }
+      } else {
+        const { successCount, errors } = await removeCookiesOnUrl(targetUrl, cookieNames);
+        okCount += successCount;
+        failCount += cookieNames.length - successCount;
+        cookieFailures.push(...errors);
+      }
+    }
+
+    bgLog("[StorageDevTools][background] handleClearStorage: done", {
+      okCount,
+      failCount,
+      cookieFailures,
+    });
+
+    return {
+      success: true,
+      data: { okCount, failCount, cookieFailures },
+    };
+  } catch (error) {
+    console.error("Error in handleClearStorage:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "清除失败",
     };
   }
 }

@@ -96,6 +96,8 @@ export interface StoredUnifiedInfo {
   items: UnifiedStorageItem[];
   sourceUrl: string;
   timestamp: number;
+  /** 关联的历史记录 ID，用于重新打开 popup 时恢复选中状态 */
+  activeHistoryId?: string;
 }
 
 /**
@@ -169,6 +171,7 @@ export enum MessageType {
   GET_CONFIG = 'GET_CONFIG',
   SAVE_CONFIG = 'SAVE_CONFIG',
   CHECK_EXTENSION_UPDATE = 'CHECK_EXTENSION_UPDATE',
+  CLEAR_STORAGE = 'CLEAR_STORAGE',
 }
 
 /**
@@ -252,6 +255,15 @@ export interface WriteStorageRequest extends MessageRequest {
 /** 检查扩展更新请求 */
 export interface CheckExtensionUpdateRequest extends MessageRequest {
   type: MessageType.CHECK_EXTENSION_UPDATE;
+}
+
+/** 清除当前标签页存储数据请求 */
+export interface ClearStorageRequest extends MessageRequest {
+  type: MessageType.CLEAR_STORAGE;
+  payload: {
+    targetUrl: string;
+    items: UnifiedStorageItem[];
+  };
 }
 
 /** 更新检查结果 */

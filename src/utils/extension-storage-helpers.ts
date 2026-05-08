@@ -128,6 +128,75 @@ export async function executeStorageBatchWrite(
 }
 
 /**
+ * 批量删除指定存储区域中的 key。
+ *
+ * @param tabId 目标标签页 ID
+ * @param keys 待删除的 key 列表
+ * @param area 存储区域：localStorage 或 sessionStorage
+ * @returns 成功与失败的 key 列表
+ */
+export async function executeStorageBatchRemove(
+  tabId: number,
+  keys: string[],
+  area: "local" | "session",
+): Promise<StorageBatchResult> {
+  if (keys.length === 0) {
+    return { ok: [], fail: [] };
+  }
+  const res = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (payload: { keys: string[]; area: "local" | "session" }) => {
+      const store =
+        payload.area === "local" ? window.localStorage : window.sessionStorage;
+      const ok: string[] = [];
+      const fail: string[] = [];
+      for (const k of payload.keys) {
+        try {
+          store.removeItem(k);
+          ok.push(k);
+        } catch {
+          fail.push(k);
+        }
+      }
+      return { ok, fail };
+    },
+    args: [{ keys, area }],
+    world: "MAIN",
+  });
+  const raw = res?.[0]?.result as StorageBatchResult | undefined;
+  return raw ?? { ok: [], fail: [] };
+}
+
+/**
+ * 批量删除 Cookie。
+ *
+ * @param targetUrl 删除时传给 `cookies.remove` 的 URL
+ * @param cookieNames 待删除的 Cookie 名称列表
+ * @returns 成功数与错误信息
+ */
+export async function removeCookiesOnUrl(
+  targetUrl: string,
+  cookieNames: string[],
+): Promise<{ successCount: number; errors: string[] }> {
+  const errors: string[] = [];
+  let successCount = 0;
+  for (const name of cookieNames) {
+    try {
+      await browser.cookies.remove({
+        url: targetUrl,
+        name,
+      });
+      successCount++;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      errors.push(`${name}: ${errorMsg}`);
+      console.error(`Failed to remove cookie ${name}:`, err);
+    }
+  }
+  return { successCount, errors };
+}
+
+/**
  * 将多条 Cookie 写入浏览器（需已具备该 `targetUrl` 的主机权限）。
  *
  * @param targetUrl 写入时传给 `cookies.set` 的 URL

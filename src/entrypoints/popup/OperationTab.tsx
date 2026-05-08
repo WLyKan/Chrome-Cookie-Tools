@@ -13,7 +13,7 @@ import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorag
 import { MessageType } from "@/types";
 import { normalizeReadHistoryHost } from "@/utils/readHistory";
 import { matchesHistoryQuery } from "@/utils/historySearch";
-import { Download, Upload, Database, Search } from "lucide-react";
+import { Download, Upload, Database, Search, RotateCcw } from "lucide-react";
 
 /** 历史行内展示：各存储项 source:key=value，分号连接 */
 function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined): string {
@@ -23,7 +23,7 @@ function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined
 
 export function OperationTab() {
   const [config, setConfig] = useState<StorageConfig | null>(null);
-  const [currentTab, setCurrentTab] = useState<{ url: string; title: string } | null>(null);
+  const [currentTab, setCurrentTab] = useState<{ id: number; url: string; title: string } | null>(null);
   const [items, setItems] = useState<UnifiedStorageItem[]>([]);
   const [historyRecords, setHistoryRecords] = useState<ReadHistoryRecord[]>([]);
   const [activeHistoryId, setActiveHistoryId] = useState<string>("");
@@ -73,8 +73,9 @@ export function OperationTab() {
   const getCurrentTab = async () => {
     try {
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url) {
+      if (tab && tab.url && tab.id) {
         setCurrentTab({
+          id: tab.id,
           url: tab.url,
           title: tab.title || new URL(tab.url).hostname,
         });
@@ -88,10 +89,12 @@ export function OperationTab() {
     if (!config) return;
     try {
       const result = await browser.storage.local.get("lastReadUnified");
-      const stored = result.lastReadUnified as { items?: UnifiedStorageItem[] } | undefined;
+      const stored = result.lastReadUnified as StoredUnifiedInfo | undefined;
       if (stored?.items?.length) {
         setItems(stored.items);
-        // toast.info(`已加载上次保存的 ${stored.items.length} 条数据`);
+        if (stored.activeHistoryId) {
+          setActiveHistoryId(stored.activeHistoryId);
+        }
       } else {
         setItems([]);
       }
@@ -108,6 +111,52 @@ export function OperationTab() {
       if ((options?.setActiveFirst || !activeHistoryId) && list?.length) setActiveHistoryId(list[0].id);
     } catch (error) {
       console.error("Failed to load read history:", error);
+    }
+  };
+
+  const handleClearStorage = async () => {
+    if (!items.length) {
+      toast.error("没有可清除的数据，请先读取");
+      return;
+    }
+    if (!currentTab?.url) {
+      toast.error("无法获取当前标签页信息");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await browser.runtime.sendMessage({
+        type: MessageType.CLEAR_STORAGE,
+        payload: {
+          targetUrl: currentTab.url,
+          items,
+        },
+      });
+
+      if (response.success) {
+        const { okCount = 0, failCount = 0, cookieFailures = [] } =
+          (response.data ?? {}) as { okCount?: number; failCount?: number; cookieFailures?: string[] };
+        if (failCount > 0) {
+          toast.info(`成功清除 ${okCount} 条，${failCount} 条失败`);
+          if (cookieFailures.length > 0) {
+            toast.error(`Cookie清除失败：${cookieFailures[0]}`);
+          }
+        } else {
+          toast.success(`成功清除 ${okCount} 条数据`);
+        }
+        // 清除后刷新当前标签页
+        if (currentTab?.id) {
+          browser.tabs.reload(currentTab.id);
+        }
+      } else {
+        toast.error(response.error || "清除失败");
+      }
+    } catch (error) {
+      toast.error("清除数据时出错");
+      console.error("Error clearing storage:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -141,6 +190,17 @@ export function OperationTab() {
       if (response.success && response.data) {
         setItems(response.data);
         await loadReadHistory({ setActiveFirst: true });
+        // 持久化读取结果，确保重新打开 popup 时能恢复
+        const historyResult = await browser.storage.local.get("readHistory");
+        const firstId = (historyResult.readHistory as ReadHistoryRecord[] | undefined)?.[0]?.id;
+        await browser.storage.local.set({
+          lastReadUnified: {
+            items: response.data,
+            sourceUrl: currentTab.url,
+            timestamp: Date.now(),
+            activeHistoryId: firstId,
+          },
+        });
         if (response.data.length === 0) {
           toast.info("未找到任何数据");
         } else {
@@ -166,6 +226,7 @@ export function OperationTab() {
         items: nextItems,
         sourceUrl: record.sourceUrl,
         timestamp: record.timestamp,
+        activeHistoryId: record.id,
       };
       await browser.storage.local.set({ lastReadUnified: stored });
     } catch (error) {
@@ -226,6 +287,11 @@ export function OperationTab() {
         } else {
           toast.success(`${activatedLabel}成功写入 ${okCount} 条数据`);
         }
+
+        // 写入完成后自动刷新当前标签页，使数据变更立即生效
+        if (currentTab?.id) {
+          browser.tabs.reload(currentTab.id);
+        }
       } else {
         toast.error(response.error || "写入失败");
       }
@@ -263,10 +329,19 @@ export function OperationTab() {
   return (
     <Card className="flex h-full min-h-0 flex-col gap-0 overflow-y-auto overflow-x-hidden border-border/80 py-0 shadow-sm ring-1 ring-border/30">
       <CardHeader className="shrink-0 space-y-3 border-b border-border/60 px-4 pb-3 pt-4">
-        <div className="space-y-1">
+        <div className="flex items-center justify-between">
           <CardDescription className="text-xs leading-relaxed">
             读取并写入存储数据到当前标签页
           </CardDescription>
+          <button
+            type="button"
+            onClick={handleClearStorage}
+            title="清除当前标签页的数据"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+          >
+            <RotateCcw className="size-3" />
+            清除
+          </button>
         </div>
         <div className="relative">
           <div className="pointer-events-none absolute inset-0 rounded-lg bg-linear-to-r from-blue-500/12 via-violet-500/8 to-fuchsia-500/12 opacity-0 transition-opacity duration-200 peer-focus-within:opacity-100" />
@@ -301,7 +376,8 @@ export function OperationTab() {
                     <button
                       key={`search-${r.id}`}
                       type="button"
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         setHistorySearchText(`${r.staffName} ${r.staffCode}`);
                         setHistorySearchOpen(false);
                         void handleActivateRecord(r);
