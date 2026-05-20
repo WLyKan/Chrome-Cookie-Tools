@@ -72,6 +72,50 @@ describe("upsertReadHistory", () => {
     expect(next[0].id).toBe(getReadHistoryRecordId("https://host-x.test/", "X"));
   });
 
+  it("用户名和工号都为空时应按 host 生成稳定记录并去重", () => {
+    const oldRecord: ReadHistoryRecord = {
+      id: "",
+      staffName: "",
+      staffCode: "",
+      sourceUrl: "http://localhost:8000/foo",
+      timestamp: 1,
+      items: [{ key: "k", value: "old", source: "localStorage" }],
+    };
+    const newRecord: ReadHistoryRecord = {
+      ...oldRecord,
+      sourceUrl: "http://localhost:8000/bar",
+      timestamp: 2,
+      items: [{ key: "k", value: "new", source: "localStorage" }],
+    };
+
+    const next = upsertReadHistory([oldRecord], newRecord, 10);
+    expect(next).toHaveLength(1);
+    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/bar", "localhost:8000"));
+    expect(next[0].timestamp).toBe(2);
+    expect(next[0].sourceUrl).toBe("http://localhost:8000/bar");
+  });
+
+  it("用户名和工号都为空时不同 host 应创建不同记录", () => {
+    const onLocalhost: ReadHistoryRecord = {
+      id: "",
+      staffName: "",
+      staffCode: "",
+      sourceUrl: "http://localhost:8000/",
+      timestamp: 1,
+      items: [{ key: "k", value: "v", source: "localStorage" }],
+    };
+    const onIp: ReadHistoryRecord = {
+      ...onLocalhost,
+      sourceUrl: "http://10.48.0.50/",
+      timestamp: 2,
+    };
+
+    const next = upsertReadHistory([onIp], onLocalhost, 10);
+    expect(next).toHaveLength(2);
+    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/", "localhost:8000"));
+    expect(next[1].id).toBe(getReadHistoryRecordId("http://10.48.0.50/", "10.48.0.50"));
+  });
+
   it("默认应只保留最近 100 条", () => {
     const history: ReadHistoryRecord[] = [];
     for (let i = 0; i < 120; i++) {

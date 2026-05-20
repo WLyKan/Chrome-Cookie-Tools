@@ -37,10 +37,28 @@ function resolveManifestVersionFromGitTag(): string {
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  dev: {
+    server: {
+      port: 3000,
+    },
+  },
   vite: () => ({
     plugins: [
       tailwindcss(),
     ],
+    server: {
+      port: 3000,
+      // 端口被占用时直接失败，避免静默切到 3001 导致扩展仍请求 3000
+      strictPort: true,
+      // 扩展页面（chrome-extension://）加载 localhost 上的 module 脚本需要 CORS 头
+      cors: {
+        origin: [
+          /^chrome-extension:\/\/.+$/,
+          /^http:\/\/localhost(:\d+)?$/,
+          /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+        ],
+      },
+    },
     resolve: {
       alias: {
         "@": "/src",

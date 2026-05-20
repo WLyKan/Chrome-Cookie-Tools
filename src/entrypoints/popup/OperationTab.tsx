@@ -21,7 +21,24 @@ function formatHistoryRecordItemsSummary(items: UnifiedStorageItem[] | undefined
   return items.map((it) => `${it.source}:${it.key}=${it.value}`).join("; ");
 }
 
-export function OperationTab() {
+function getUrlHostForLog(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
+}
+
+function formatIdentityLabel(staffName: string, staffCode: string, sourceUrl?: string): string {
+  if (staffName && staffCode) return `${staffName}（${staffCode}）`;
+  return staffName || staffCode || (sourceUrl ? normalizeReadHistoryHost(sourceUrl) : "未关联历史身份");
+}
+
+interface OperationTabProps {
+  onMissingStorageKeys?: () => void;
+}
+
+export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
   const [config, setConfig] = useState<StorageConfig | null>(null);
   const [currentTab, setCurrentTab] = useState<{ id: number; url: string; title: string } | null>(null);
   const [items, setItems] = useState<UnifiedStorageItem[]>([]);
@@ -103,14 +120,24 @@ export function OperationTab() {
     }
   };
 
-  const loadReadHistory = async (options?: { setActiveFirst?: boolean }) => {
+  const loadReadHistory = async (
+    options?: { setActiveFirst?: boolean; activeSourceUrl?: string },
+  ): Promise<ReadHistoryRecord[]> => {
     try {
       const result = await browser.storage.local.get("readHistory");
       const list = (result.readHistory || []) as ReadHistoryRecord[];
       setHistoryRecords(Array.isArray(list) ? list : []);
-      if ((options?.setActiveFirst || !activeHistoryId) && list?.length) setActiveHistoryId(list[0].id);
+      if (options?.activeSourceUrl) {
+        const activeHost = normalizeReadHistoryHost(options.activeSourceUrl);
+        const matched = list.find((record) => normalizeReadHistoryHost(record.sourceUrl) === activeHost);
+        setActiveHistoryId(matched?.id || "");
+      } else if ((options?.setActiveFirst || !activeHistoryId) && list?.length) {
+        setActiveHistoryId(list[0].id);
+      }
+      return Array.isArray(list) ? list : [];
     } catch (error) {
       console.error("Failed to load read history:", error);
+      return [];
     }
   };
 
@@ -162,6 +189,7 @@ export function OperationTab() {
 
   const handleReadData = async () => {
     if (!config) {
+      onMissingStorageKeys?.();
       toast.error("请先设置需要获取的存储键名");
       return;
     }
@@ -173,6 +201,18 @@ export function OperationTab() {
     setLoading(true);
     try {
       const keys = config.storageKeys ?? (config as { cookieNames?: string[] }).cookieNames ?? [];
+      if (keys.length === 0) {
+        onMissingStorageKeys?.();
+        toast.error("请先在配置页设置需要读取的存储键名");
+        return;
+      }
+      console.log("[StorageDevTools][identity] Popup 读取按钮点击", {
+        currentTabUrl: currentTab.url,
+        currentTabHost: getUrlHostForLog(currentTab.url),
+        activeHistoryStaffCode: activeRecord?.staffCode || "",
+        activeHistoryStaffName: activeRecord?.staffName || "",
+        activeHistoryHost: activeRecord?.sourceUrl ? getUrlHostForLog(activeRecord.sourceUrl) : "",
+      });
       console.log("[StorageDevTools][popup] handleReadData: send", {
         sourceUrl: currentTab.url,
         keys,
@@ -189,23 +229,37 @@ export function OperationTab() {
 
       if (response.success && response.data) {
         setItems(response.data);
-        await loadReadHistory({ setActiveFirst: true });
+        if (response.data.length === 0) {
+          setActiveHistoryId("");
+          await loadReadHistory();
+          await browser.storage.local.set({
+            lastReadUnified: {
+              items: response.data,
+              sourceUrl: currentTab.url,
+              timestamp: Date.now(),
+            },
+          });
+          toast.info("未找到任何数据");
+          return;
+        }
+        const historyList = await loadReadHistory({
+          setActiveFirst: true,
+          activeSourceUrl: currentTab.url,
+        });
         // 持久化读取结果，确保重新打开 popup 时能恢复
-        const historyResult = await browser.storage.local.get("readHistory");
-        const firstId = (historyResult.readHistory as ReadHistoryRecord[] | undefined)?.[0]?.id;
+        const currentHost = normalizeReadHistoryHost(currentTab.url);
+        const activeRecordForCurrentHost = historyList.find(
+          (record) => normalizeReadHistoryHost(record.sourceUrl) === currentHost,
+        );
         await browser.storage.local.set({
           lastReadUnified: {
             items: response.data,
             sourceUrl: currentTab.url,
             timestamp: Date.now(),
-            activeHistoryId: firstId,
+            activeHistoryId: activeRecordForCurrentHost?.id,
           },
         });
-        if (response.data.length === 0) {
-          toast.info("未找到任何数据");
-        } else {
-          toast.success(`成功读取 ${response.data.length} 条数据`);
-        }
+        toast.success(`成功读取 ${response.data.length} 条数据`);
       } else {
         toast.error(response.error || "读取失败");
       }
@@ -276,7 +330,11 @@ export function OperationTab() {
           cookieFailures?: string[];
         };
         const activatedLabel = options?.activatedRecord
-          ? `已激活：${options.activatedRecord.staffName}（${options.activatedRecord.staffCode}），`
+          ? `已激活：${formatIdentityLabel(
+            options.activatedRecord.staffName,
+            options.activatedRecord.staffCode,
+            options.activatedRecord.sourceUrl,
+          )}，`
           : "";
         if (failCount > 0) {
           toast.info(`${activatedLabel}成功写入 ${okCount} 条，${failCount} 条失败`);
@@ -378,7 +436,7 @@ export function OperationTab() {
                       type="button"
                       onMouseDown={(e) => {
                         e.preventDefault();
-                        setHistorySearchText(`${r.staffName} ${r.staffCode}`);
+                        setHistorySearchText(formatIdentityLabel(r.staffName, r.staffCode, r.sourceUrl));
                         setHistorySearchOpen(false);
                         void handleActivateRecord(r);
                       }}
@@ -389,7 +447,7 @@ export function OperationTab() {
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="truncate text-sm font-medium">
-                          {r.staffName}（{r.staffCode}）
+                          {formatIdentityLabel(r.staffName, r.staffCode, r.sourceUrl)}
                         </div>
                         <div className="shrink-0 text-[10px] text-muted-foreground">
                           {new Date(r.timestamp).toLocaleString()}
@@ -422,7 +480,7 @@ export function OperationTab() {
             <span className="ml-1.5 font-normal text-muted-foreground">
               ·{" "}
               {activeRecord
-                ? `${activeRecord.staffName}（${activeRecord.staffCode}）`
+                ? formatIdentityLabel(activeRecord.staffName, activeRecord.staffCode, activeRecord.sourceUrl)
                 : "未关联历史身份"}
               · {items.length} 条
             </span>
@@ -494,7 +552,7 @@ export function OperationTab() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="truncate text-sm font-medium text-foreground">
-                        {r.staffName}（{r.staffCode}）
+                        {formatIdentityLabel(r.staffName, r.staffCode, r.sourceUrl)}
                       </div>
                       <div className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
                         {new Date(r.timestamp).toLocaleString()}

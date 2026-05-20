@@ -89,8 +89,8 @@ export function extractIdentityFromPersonInfoRaw(personInfoRaw: string): UserIde
   const objects = collectCandidateObjects(root);
   for (const obj of objects) {
     const staffCode = findByKeys(obj, STAFF_CODE_KEYS);
-    if (!staffCode) continue;
-    const staffName = findByKeys(obj, STAFF_NAME_KEYS) || staffCode;
+    const staffName = findByKeys(obj, STAFF_NAME_KEYS);
+    if (!staffCode && !staffName) continue;
     return { staffCode, staffName };
   }
 
@@ -115,7 +115,6 @@ export function extractIdentityFromStorageItems(items: UnifiedStorageItem[]): Us
       break;
     }
   }
-  if (!staffCode) return null;
 
   let staffName = "";
   for (const key of STAFF_NAME_KEYS) {
@@ -125,9 +124,42 @@ export function extractIdentityFromStorageItems(items: UnifiedStorageItem[]): Us
       break;
     }
   }
+  if (!staffCode && !staffName) return null;
 
   return {
     staffCode,
-    staffName: staffName || staffCode,
+    staffName,
+  };
+}
+
+function decodeCookieValue(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * 当用户名不可用时，使用 username Cookie 兜底；工号和用户名互不依赖。
+ */
+export function applyUsernameCookieFallback(
+  identity: UserIdentity | null,
+  usernameCookieValue: string | null | undefined,
+): UserIdentity | null {
+  if (identity?.staffName && (!identity.staffCode || identity.staffName !== identity.staffCode)) {
+    return identity;
+  }
+
+  const username = normalizeIdentityValue(
+    typeof usernameCookieValue === "string"
+      ? decodeCookieValue(usernameCookieValue)
+      : usernameCookieValue,
+  );
+  if (!username) return identity;
+
+  return {
+    staffCode: identity?.staffCode || "",
+    staffName: username,
   };
 }

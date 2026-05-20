@@ -141,7 +141,7 @@ export const DEFAULT_SOURCE_URL_CONFIG: SourceUrlConfig = {
 
 /** 默认存储配置 */
 export const DEFAULT_STORAGE_CONFIG: StorageConfig = {
-  storageKeys: ['REFRESH_TOKEN', 'token', 'tenantId'],
+  storageKeys: ['REFRESH_TOKEN', 'token', 'tenantId', 'ticket', 'JSESSIONID'],
   storageType: DEFAULT_TYPE,
   updatedAt: 0,
 };

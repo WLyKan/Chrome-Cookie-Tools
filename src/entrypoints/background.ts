@@ -41,6 +41,7 @@ import {
   setCookiesOnUrl,
 } from "@/utils/extension-storage-helpers";
 import {
+  applyUsernameCookieFallback,
   extractIdentityFromPersonInfoRaw,
   extractIdentityFromStorageItems,
 } from "@/utils/identity";
@@ -52,6 +53,14 @@ function bgLog(...args: unknown[]) {
 
 function bgWarnDev(...args: unknown[]) {
   if (import.meta.env.DEV) console.warn(...args);
+}
+
+function getUrlHostForLog(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return "";
+  }
 }
 
 const GITHUB_LATEST_RELEASE_API =
@@ -370,6 +379,12 @@ async function handleReadStorage(
     if (hostErr) return hostErr;
 
     const expectedUrl = new URL(sourceUrl);
+    console.log("[StorageDevTools][identity] 读取按钮触发：主域名取值", {
+      sourceUrl,
+      sourceHost: getUrlHostForLog(sourceUrl),
+      currentTabUrl: tab.url,
+      currentTabHost: getUrlHostForLog(tab.url),
+    });
 
     const scriptResult = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -453,37 +468,87 @@ async function handleReadStorage(
     };
     await browser.storage.local.set({ lastReadUnified: stored });
 
+    if (items.length === 0) {
+      console.log("[StorageDevTools][identity] 未读取到任何键名数据，跳过读取历史保存", {
+        sourceUrl,
+        sourceHost: getUrlHostForLog(sourceUrl),
+      });
+      return { success: true, data: items };
+    }
+
     try {
       let identity = extractIdentityFromStorageItems(items);
+      console.log("[StorageDevTools][identity] 从已读取存储项提取身份", {
+        staffCode: identity?.staffCode || "",
+        staffName: identity?.staffName || "",
+        itemKeys: items.map((item) => `${item.source}:${item.key}`),
+      });
       const personInfoRes = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => window.localStorage.getItem("personInfo"),
         world: "MAIN",
       });
       const personInfoRaw = personInfoRes?.[0]?.result as string | null | undefined;
+      let personInfoIdentity: typeof identity = null;
       if (typeof personInfoRaw === "string" && personInfoRaw.trim() !== "") {
-        identity = extractIdentityFromPersonInfoRaw(personInfoRaw) || identity;
+        personInfoIdentity = extractIdentityFromPersonInfoRaw(personInfoRaw);
+        identity = personInfoIdentity || identity;
+      }
+      console.log("[StorageDevTools][identity] 从 localStorage.personInfo 提取身份", {
+        hasPersonInfo: typeof personInfoRaw === "string" && personInfoRaw.trim() !== "",
+        staffCode: personInfoIdentity?.staffCode || "",
+        staffName: personInfoIdentity?.staffName || "",
+        appliedStaffCode: identity?.staffCode || "",
+        appliedStaffName: identity?.staffName || "",
+      });
+      if (!identity?.staffName) {
+        let usernameCookieValue = cookieMap.username?.value;
+        if (!usernameCookieValue && hasHost) {
+          const usernameCookies = await browser.cookies.getAll({
+            url: sourceUrl,
+            name: "username",
+          });
+          usernameCookieValue = usernameCookies[0]?.value;
+        }
+        console.log("[StorageDevTools][identity] 从 Cookie.username 兜底用户名", {
+          staffCode: identity?.staffCode || "",
+          beforeStaffName: identity?.staffName || "",
+          usernameCookieValue: usernameCookieValue || "",
+        });
+        identity = applyUsernameCookieFallback(identity, usernameCookieValue);
+        console.log("[StorageDevTools][identity] Cookie.username 兜底后身份", {
+          staffCode: identity?.staffCode || "",
+          staffName: identity?.staffName || "",
+        });
+      } else {
+        console.log("[StorageDevTools][identity] 跳过 Cookie.username 兜底", {
+          reason: "已有用户名",
+          staffCode: identity?.staffCode || "",
+          staffName: identity?.staffName || "",
+        });
       }
 
-      if (identity?.staffCode) {
-        const record: ReadHistoryRecord = {
-          id: getReadHistoryRecordId(sourceUrl, identity.staffCode),
-          staffName: identity.staffName || identity.staffCode,
-          staffCode: identity.staffCode,
-          sourceUrl,
-          timestamp: stored.timestamp,
-          items,
-        };
-        const result = await browser.storage.local.get("readHistory");
-        const history = (result.readHistory || []) as ReadHistoryRecord[];
-        const next = upsertReadHistory(history, record, 100);
-        await browser.storage.local.set({ readHistory: next });
-      } else {
-        bgWarnDev(
-          "[StorageDevTools][background] handleReadStorage: skip readHistory save, missing identity",
-          { sourceUrl, itemCount: items.length },
-        );
-      }
+      const sourceHost = getUrlHostForLog(sourceUrl);
+      const identityKey = identity?.staffCode || identity?.staffName || sourceHost;
+      const record: ReadHistoryRecord = {
+        id: getReadHistoryRecordId(sourceUrl, identityKey),
+        staffName: identity?.staffName || "",
+        staffCode: identity?.staffCode || "",
+        sourceUrl,
+        timestamp: stored.timestamp,
+        items,
+      };
+      console.log("[StorageDevTools][identity] 最终写入读取历史的身份和主域名", {
+        identityKey,
+        staffCode: record.staffCode,
+        staffName: record.staffName,
+        sourceUrl: record.sourceUrl,
+        sourceHost,
+      });
+      const result = await browser.storage.local.get("readHistory");
+      const history = (result.readHistory || []) as ReadHistoryRecord[];
+      const next = upsertReadHistory(history, record, 100);
+      await browser.storage.local.set({ readHistory: next });
     } catch (error) {
       bgWarnDev(
         "[StorageDevTools][background] handleReadStorage: failed to save readHistory",

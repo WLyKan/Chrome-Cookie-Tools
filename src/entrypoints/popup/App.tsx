@@ -3,7 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Toaster, toast } from "@/components/ui/toast";
 import { ConfigTab } from "./ConfigTab";
 import { OperationTab } from "./OperationTab";
-import { Settings, Play } from "lucide-react";
+import { ExternalLink, Settings, Play } from "lucide-react";
 import { MessageType, type MessageResponse, type ExtensionUpdateInfo } from "@/types";
 
 const UPDATE_CHECK_CACHE_KEY = "extensionUpdateCache";
@@ -28,6 +28,12 @@ function App() {
   const [activeTab, setActiveTab] = useState("operation");
   const isDev = import.meta.env.DEV;
   const currentVersion = chrome.runtime.getManifest().version;
+
+  const openProductSite = () => {
+    void browser.tabs.create({
+      url: "https://wlykan.github.io/Chrome-Cookie-Tools/",
+    });
+  };
 
   useEffect(() => {
     let disposed = false;
@@ -128,8 +134,19 @@ function App() {
             <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
               Storage Dev Tools
             </h1>
-            <p className="mt-0.5 text-xs leading-relaxed text-primary-foreground/85">
-              在当前站点读取存储并写回，便于联调与迁移（v{currentVersion}）
+            <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs leading-relaxed text-primary-foreground/85">
+              <span className="min-w-0 truncate">
+                在当前站点读取存储并写回，便于联调与迁移（v{currentVersion}）
+              </span>
+              <button
+                type="button"
+                onClick={openProductSite}
+                title="打开产品官网"
+                aria-label="打开产品官网"
+                className="inline-flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-primary-foreground/85 transition-colors duration-150 hover:bg-white/15 hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/45 motion-reduce:transition-none"
+              >
+                <ExternalLink className="size-3.5" aria-hidden />
+              </button>
             </p>
           </div>
         </div>
@@ -162,7 +179,7 @@ function App() {
             value="operation"
             className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden focus-visible:outline-none"
           >
-            <OperationTab />
+            <OperationTab onMissingStorageKeys={() => setActiveTab("config")} />
           </TabsContent>
 
           <TabsContent
