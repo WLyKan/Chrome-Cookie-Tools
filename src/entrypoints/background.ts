@@ -531,12 +531,13 @@ async function handleReadStorage(
       const sourceHost = getUrlHostForLog(sourceUrl);
       const identityKey = identity?.staffCode || identity?.staffName || sourceHost;
       const record: ReadHistoryRecord = {
-        id: getReadHistoryRecordId(sourceUrl, identityKey),
+        id: getReadHistoryRecordId(sourceUrl, identityKey, keys),
         staffName: identity?.staffName || "",
         staffCode: identity?.staffCode || "",
         sourceUrl,
         timestamp: stored.timestamp,
         items,
+        storageKeys: [...keys],
       };
       console.log("[StorageDevTools][identity] 最终写入读取历史的身份和主域名", {
         identityKey,

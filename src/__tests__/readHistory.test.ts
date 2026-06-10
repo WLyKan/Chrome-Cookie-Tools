@@ -6,14 +6,16 @@ function makeRecord(
   staffCode: string,
   ts: number,
   sourceUrl: string = "https://example.com/path",
+  storageKeys: string[] = ["k"],
 ): ReadHistoryRecord {
   return {
-    id: getReadHistoryRecordId(sourceUrl, staffCode),
+    id: getReadHistoryRecordId(sourceUrl, staffCode, storageKeys),
     staffName: `name-${staffCode}`,
     staffCode,
     sourceUrl,
     timestamp: ts,
     items: [{ key: "k", value: "v", source: "localStorage" }],
+    storageKeys,
   };
 }
 
@@ -69,7 +71,7 @@ describe("upsertReadHistory", () => {
     const next = upsertReadHistory(history, makeRecord("X", 999, "https://host-x.test/"), 10);
     expect(next).toHaveLength(10);
     expect(next[0].staffCode).toBe("X");
-    expect(next[0].id).toBe(getReadHistoryRecordId("https://host-x.test/", "X"));
+    expect(next[0].id).toBe(getReadHistoryRecordId("https://host-x.test/", "X", ["k"]));
   });
 
   it("用户名和工号都为空时应按 host 生成稳定记录并去重", () => {
@@ -90,7 +92,7 @@ describe("upsertReadHistory", () => {
 
     const next = upsertReadHistory([oldRecord], newRecord, 10);
     expect(next).toHaveLength(1);
-    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/bar", "localhost:8000"));
+    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/bar", "localhost:8000", ["k"]));
     expect(next[0].timestamp).toBe(2);
     expect(next[0].sourceUrl).toBe("http://localhost:8000/bar");
   });
@@ -112,8 +114,8 @@ describe("upsertReadHistory", () => {
 
     const next = upsertReadHistory([onIp], onLocalhost, 10);
     expect(next).toHaveLength(2);
-    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/", "localhost:8000"));
-    expect(next[1].id).toBe(getReadHistoryRecordId("http://10.48.0.50/", "10.48.0.50"));
+    expect(next[0].id).toBe(getReadHistoryRecordId("http://localhost:8000/", "localhost:8000", ["k"]));
+    expect(next[1].id).toBe(getReadHistoryRecordId("http://10.48.0.50/", "10.48.0.50", ["k"]));
   });
 
   it("默认应只保留最近 100 条", () => {
@@ -125,5 +127,39 @@ describe("upsertReadHistory", () => {
     const next = upsertReadHistory(history, makeRecord("NEW", 999, "https://host-new.test/"));
     expect(next).toHaveLength(100);
     expect(next[0].staffCode).toBe("NEW");
+  });
+
+  it("同域名同用户不同 storageKeys 应产生独立记录", () => {
+    const recordA = makeRecord("user1", 1, "https://example.com/", ["token", "REFRESH_TOKEN"]);
+    const recordB = makeRecord("user1", 2, "https://example.com/", ["ticket", "JSESSIONID"]);
+    const next = upsertReadHistory([recordA], recordB, 10);
+    expect(next).toHaveLength(2);
+    expect(next[0].storageKeys).toEqual(["ticket", "JSESSIONID"]);
+    expect(next[1].storageKeys).toEqual(["token", "REFRESH_TOKEN"]);
+  });
+
+  it("同域名同用户相同 storageKeys（顺序不同）应合并为一条", () => {
+    const recordA = makeRecord("user1", 1, "https://example.com/", ["token", "REFRESH_TOKEN"]);
+    const recordB = makeRecord("user1", 2, "https://example.com/", ["REFRESH_TOKEN", "token"]);
+    const next = upsertReadHistory([recordA], recordB, 10);
+    expect(next).toHaveLength(1);
+    expect(next[0].timestamp).toBe(2);
+  });
+
+  it("旧格式记录（无 storageKeys）应被新记录覆盖", () => {
+    const oldRecord: ReadHistoryRecord = {
+      id: "old-id",
+      staffName: "name-user1",
+      staffCode: "user1",
+      sourceUrl: "https://example.com/old",
+      timestamp: 1,
+      items: [{ key: "k", value: "v", source: "localStorage" }],
+      // 无 storageKeys 字段
+    };
+    const newRecord = makeRecord("user1", 2, "https://example.com/new", ["token"]);
+    const next = upsertReadHistory([oldRecord], newRecord, 10);
+    expect(next).toHaveLength(1);
+    expect(next[0].timestamp).toBe(2);
+    expect(next[0].storageKeys).toEqual(["token"]);
   });
 });

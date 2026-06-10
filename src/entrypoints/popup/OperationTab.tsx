@@ -129,7 +129,17 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
       setHistoryRecords(Array.isArray(list) ? list : []);
       if (options?.activeSourceUrl) {
         const activeHost = normalizeReadHistoryHost(options.activeSourceUrl);
-        const matched = list.find((record) => normalizeReadHistoryHost(record.sourceUrl) === activeHost);
+        const sortedKeys = [...storageKeys].sort();
+        const matched =
+          list.find(
+            (record) =>
+              normalizeReadHistoryHost(record.sourceUrl) === activeHost &&
+              record.storageKeys &&
+              [...record.storageKeys].sort().join(",") === sortedKeys.join(","),
+          ) ||
+          list.find(
+            (record) => normalizeReadHistoryHost(record.sourceUrl) === activeHost,
+          );
         setActiveHistoryId(matched?.id || "");
       } else if ((options?.setActiveFirst || !activeHistoryId) && list?.length) {
         setActiveHistoryId(list[0].id);

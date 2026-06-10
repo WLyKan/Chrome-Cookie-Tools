@@ -116,6 +116,8 @@ export interface ReadHistoryRecord {
   timestamp: number;
   /** 本次读取到的存储数据 */
   items: UnifiedStorageItem[];
+  /** 本次读取使用的 storageKeys 配置（用于去重区分不同 key 组合） */
+  storageKeys?: string[];
 }
 
 /**
