@@ -4,6 +4,7 @@ const navLinks = [
   { href: "#features", label: "功能特性" },
   { href: "#scenarios", label: "使用场景" },
   { href: "#install", label: "本地安装" },
+  { href: "#more-plugins", label: "更多插件" },
 ];
 
 const badges = [
@@ -490,6 +491,94 @@ pnpm build`}</code>
                 如果提示缺少权限或 Cookie 相关 API 不可用，请确认已在弹窗里授权对应站点权限，并在扩展详情页中检查「网站访问权限」设置。
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="more-plugins" className="section">
+          <h2 className="section-title">更多插件</h2>
+          <div className="plugins-grid">
+            <article className="plugin-card">
+              <div className="plugin-header">
+                <div className="plugin-icon-box">
+                  <img src={`${import.meta.env.BASE_URL}1781753154937e.png`} alt="Overtime Tools" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+                <div>
+                  <h3 className="plugin-title">加班工时统计</h3>
+                  <span className="plugin-badge">After Six</span>
+                </div>
+              </div>
+              <p className="plugin-desc">
+                自动统计当月加班工时，在 UBD 系统页面直接显示。从 EHR 系统获取打卡数据，智能计算工作日和周末加班时长，告别手动统计。
+              </p>
+              <ul className="plugin-features">
+                <li>自动获取 EHR 打卡数据</li>
+                <li>智能计算加班时长</li>
+                <li>页面内直接显示统计结果</li>
+              </ul>
+              <div className="plugin-actions">
+                <a
+                  href="https://github.com/WLyKan/after-six/releases"
+                  className="btn-plugin"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  下载安装
+                </a>
+                <a
+                  href="https://github.com/WLyKan/after-six"
+                  className="btn-plugin-outline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  查看源码
+                </a>
+              </div>
+            </article>
+
+            <article className="plugin-card plugin-card-coming">
+              <div className="plugin-header">
+                <div className="plugin-icon-box plugin-icon-coming">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="plugin-title">敬请期待</h3>
+                  <span className="plugin-badge plugin-badge-coming">开发中</span>
+                </div>
+              </div>
+              <p className="plugin-desc">
+                更多实用的开发工具正在路上，敬请期待。
+              </p>
+              <ul className="plugin-features">
+                <li>即将公布</li>
+              </ul>
+            </article>
+
+            <article className="plugin-card plugin-card-coming">
+              <div className="plugin-header">
+                <div className="plugin-icon-box plugin-icon-coming">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="plugin-title">敬请期待</h3>
+                  <span className="plugin-badge plugin-badge-coming">规划中</span>
+                </div>
+              </div>
+              <p className="plugin-desc">
+                更多实用的开发工具正在路上，敬请期待。
+              </p>
+              <ul className="plugin-features">
+                <li>即将公布</li>
+              </ul>
+            </article>
           </div>
         </section>
 
