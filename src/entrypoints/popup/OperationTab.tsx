@@ -270,6 +270,8 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
           },
         });
         toast.success(`成功读取 ${response.data.length} 条数据`);
+        // 读取成功后延迟 1 秒关闭 popup
+        setTimeout(() => window.close(), 1000);
       } else {
         toast.error(response.error || "读取失败");
       }
@@ -360,6 +362,8 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
         if (currentTab?.id) {
           browser.tabs.reload(currentTab.id);
         }
+        // 写入成功后延迟 1 秒关闭 popup
+        setTimeout(() => window.close(), 1000);
       } else {
         toast.error(response.error || "写入失败");
       }
