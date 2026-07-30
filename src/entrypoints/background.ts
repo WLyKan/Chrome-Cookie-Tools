@@ -33,10 +33,12 @@ import {
   ensureEffectiveHostPermission,
   executeStorageBatchWrite,
   executeStorageBatchRemove,
+  executeStorageClearAll,
   hasEffectiveHostPermission,
   originMatchPatternForUrl,
   queryActiveTabInCurrentWindow,
   readSourceHostnameGuard,
+  removeAllCookiesOnUrl,
   removeCookiesOnUrl,
   setCookiesOnUrl,
 } from "@/utils/extension-storage-helpers";
@@ -631,6 +633,25 @@ async function handleWriteStorage(
       sessionCount: sessionEntries.length,
       cookieCount: cookieItems.length,
     });
+
+    // 写入前清空目标站点的全部 localStorage 和 Cookie
+    bgLog("[StorageDevTools][background] handleWriteStorage: clearing existing data before write");
+    try {
+      if (localEntries.length > 0) {
+        await executeStorageClearAll(tab.id, "local");
+        bgLog("[StorageDevTools][background] handleWriteStorage: localStorage cleared");
+      }
+      if (cookieItems.length > 0) {
+        const canClearCookies = await ensureEffectiveHostPermission(url);
+        if (canClearCookies) {
+          const clearResult = await removeAllCookiesOnUrl(targetUrl);
+          bgLog("[StorageDevTools][background] handleWriteStorage: cookies cleared", clearResult);
+        }
+      }
+    } catch (clearError) {
+      // 清空失败不阻止写入，降级为覆盖模式
+      bgWarnDev("[StorageDevTools][background] handleWriteStorage: clear failed, fallback to overwrite", clearError);
+    }
 
     let okCount = 0;
     let failCount = 0;
