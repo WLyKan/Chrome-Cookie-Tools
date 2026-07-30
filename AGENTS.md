@@ -25,7 +25,7 @@ pnpm install          # 安装依赖
 pnpm dev              # Chrome 开发调试
 pnpm build            # 生产构建（Chrome）
 pnpm compile          # 类型检查（必须通过）
-pnpm zip              # 打包扩展
+pnpm zip              # 打 zip 包（构建 + 压缩）
 ```
 
 Chrome 加载开发版本：打开 `chrome://extensions` → 启用开发者模式 →「加载已解压的扩展程序」→ 选择 `.output/chrome-mv3/`。
@@ -100,3 +100,42 @@ Shadcn 组件安装：`pnpm dlx shadcn@latest add [组件名]`。
   - Cookie / LocalStorage 在不同环境间读写是否符合预期（尤其是域名校验和覆盖策略）。
   - Chrome / Firefox 构建后的扩展加载是否无明显报错。
 - 提交信息建议使用类约定式风格，可带 emoji，例如：`✨ feat: add cookie sync`、`fix: handle storage error`。
+
+---
+
+### 8. Context Wiki 导航
+
+本项目使用 `context/` 目录维护结构化的项目文档和工作流。
+
+**读取顺序：**
+1. `context/index.md` - 导航索引
+2. `context/rules.md` - 执行规则
+3. `context/project.md` - 项目信息
+4. `context/specs/` - 相关规范
+5. `context/changes/<slug>/` - 活跃变更（进行具体工作时）
+
+**目录结构：**
+- `context/specs/` - 稳定的行为规范
+- `context/changes/` - 活跃的工作进行中
+- `context/archive/changes/` - 已完成的历史变更
+- `context/log.md` - Wiki 更新时间线
+
+**源文件优先级：**
+如果 `AGENTS.md` 和 `context/` 有分歧，以 `context/` 为准。
+
+<comet-ambient-resume>
+<!-- Managed by Comet. Edits inside this block may be replaced by comet init/update. -->
+<!-- Contract: comet.resume_probe.v2 -->
+
+## Comet Ambient Resume
+
+在这个仓库中，开始处理需要改动或调查的任务前，如果可能存在活跃 Comet workflow，把当前用户请求传入只读探针：`comet resume-probe . --stdin --json`。
+
+- 如果用户通过宿主明确调用任意 Comet Skill（例如 `@comet`、`/comet`、`@comet-native` 或 `/comet-hotfix`），显式调用优先于本恢复协议；不要运行 resume probe，直接进入被调用的 Skill。
+- 只信任返回的 `workflow`、`skill` 和 `entrySource`；它们只由项目配置或无配置兼容回退决定。不得扫描或切换另一套 workflow。
+- 如果 probe 返回 `auto_resume`，简短说明选中的 active change，并进入 `nextCommand` 指向的永久入口。不要把状态命令当作恢复入口直接推进。
+- 如果 probe 返回 `ask_user`，只问一个简短问题并等待用户回复。
+- 如果当前请求未明确调用 Comet Skill，且 probe 返回 `out_of_scope` 或 `none`，不要进入 Comet workflow。
+- 如果配置或状态无效且没有 `nextCommand`，停止并报告原因；不要猜测另一个 workflow。
+- 不能只因为存在 active change 就把无关任务挂到该 change。Native 的未提交改动由 Native 入口检查，不由探针自动归因。
+</comet-ambient-resume>
