@@ -1,0 +1,91 @@
+{
+  "schema": "comet.native.implementation-scope.v2",
+  "contractHash": "1653cbae58f45ae78955380417d19446cb26e2e333b25ea390789102652ce8b6",
+  "baselineProjectionRef": "runtime/evidence/snapshots/f0f921bfd6cd16f83444ee270f95fcf61f280c47353e6a9908be12cf1ce3de3e.json",
+  "baselineProjectionHash": "f0f921bfd6cd16f83444ee270f95fcf61f280c47353e6a9908be12cf1ce3de3e",
+  "currentProjectionRef": "runtime/evidence/snapshots/9c1fc96d315621b7d1462a2bc72347032c9a20ef0a8df0d905e73eee1fae16a3.json",
+  "currentProjectionHash": "9c1fc96d315621b7d1462a2bc72347032c9a20ef0a8df0d905e73eee1fae16a3",
+  "complete": true,
+  "declaredArtifacts": [
+    {
+      "path": "AGENTS.md",
+      "kind": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "kind": "file"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "kind": "file"
+    },
+    {
+      "path": "src/entrypoints/background.ts",
+      "kind": "file"
+    },
+    {
+      "path": "src/utils/extension-storage-helpers.ts",
+      "kind": "file"
+    }
+  ],
+  "changes": [
+    {
+      "path": "pnpm-workspace.yaml",
+      "kind": "modified",
+      "before": {
+        "hash": "5d26409f67240641cb4b51ac8d94a7df2596696ee06a924bde5cbfe684dd1f2a",
+        "size": 31
+      },
+      "after": {
+        "hash": "f3849f288f95470c3c2a8b7988e943dbe7380de06b9512448bad08d3cf1b35e6",
+        "size": 162
+      },
+      "attributedTo": [
+        {
+          "path": "pnpm-workspace.yaml",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "src/entrypoints/background.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "3e3d17d929cd0b75b016a0ea6d2f61557225beb3ceb379171fd306330009bf18",
+        "size": 26966
+      },
+      "after": {
+        "hash": "1dc1b74ea8aa90679c32746e5ec5afa1c6034c3b956d181086c3d1c651e4c86a",
+        "size": 27925
+      },
+      "attributedTo": [
+        {
+          "path": "src/entrypoints/background.ts",
+          "kind": "file"
+        }
+      ]
+    },
+    {
+      "path": "src/utils/extension-storage-helpers.ts",
+      "kind": "modified",
+      "before": {
+        "hash": "04a3e90cf602ea0715b29796946f0a64e5cc7bf586f8277633717badc487b4b6",
+        "size": 7015
+      },
+      "after": {
+        "hash": "01def414dc6961b15db2955be1fc946457e552d90ddff28b89b4187c1c663f68",
+        "size": 8553
+      },
+      "attributedTo": [
+        {
+          "path": "src/utils/extension-storage-helpers.ts",
+          "kind": "file"
+        }
+      ]
+    }
+  ],
+  "unattributed": [],
+  "unresolvedScopes": [],
+  "noCodeReason": null,
+  "scopeHash": "991121548ebdb886275a2554b5a3433bd3c6782bf2133e9fd686dd7593f6ae09"
+}

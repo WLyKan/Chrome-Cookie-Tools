@@ -1,0 +1,58 @@
+{
+  "schema": "comet.native.verification-evidence.v1",
+  "change": "clear-before-write",
+  "sourceRevision": 3,
+  "result": "pass",
+  "freshness": "complete",
+  "contractHash": "1653cbae58f45ae78955380417d19446cb26e2e333b25ea390789102652ce8b6",
+  "acceptanceCriteriaHash": "51b0b9ee67ad3e32e3439e8bf82ba94f5769a0042c99e4cff4bde4507a539e0d",
+  "implementationScopeRef": "runtime/evidence/scopes/991121548ebdb886275a2554b5a3433bd3c6782bf2133e9fd686dd7593f6ae09.json",
+  "implementationScopeHash": "991121548ebdb886275a2554b5a3433bd3c6782bf2133e9fd686dd7593f6ae09",
+  "reportRef": "verification.md",
+  "reportHash": "3753b3191199f03e7083c1560782aa1d780d161766545e5941fcfcb11b29be2d",
+  "acceptanceTrace": {
+    "schema": "comet.native.acceptance-trace.v1",
+    "nativeRootRef": "docs/comet",
+    "criteriaHash": "51b0b9ee67ad3e32e3439e8bf82ba94f5769a0042c99e4cff4bde4507a539e0d",
+    "total": 3,
+    "evidenced": 3,
+    "skipped": 0,
+    "entries": [
+      {
+        "acceptanceId": "acceptance-38a403f2b03648d6c6ae2516db268d8c25009fb9d82ae4ed5ad171e80e04f802",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "src/entrypoints/background.ts",
+          "src/utils/extension-storage-helpers.ts"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-5d9a4ed4d64c27c03c5c1e727a370cf92ccad98ee581289f869ab155dd855770",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "src/entrypoints/background.ts"
+        ],
+        "skippedReason": null
+      },
+      {
+        "acceptanceId": "acceptance-ee53e9775450a27df226a612b7fbe4efdf0a6aa63da11617f13ae85d5a683445",
+        "kind": "brief-example",
+        "source": "brief.md",
+        "evidenceRefs": [
+          "src/entrypoints/background.ts",
+          "src/utils/extension-storage-helpers.ts"
+        ],
+        "skippedReason": null
+      }
+    ],
+    "traceHash": "ee39f6c96264ff1a965e31ca3dbb06981e400d503f521c8e3d244b3b30f475da"
+  },
+  "partialAllowanceRef": null,
+  "partialAllowanceHash": null,
+  "receiptRef": "runtime/evidence/check-receipts/ac39341b081f504d7489d1c1b4b7910a3e2046abea1dcffb70139d6e4df9c1f2.json",
+  "createdAt": "2026-07-30T06:51:14.853Z",
+  "envelopeHash": "b6e4ff36a84efea41692162a1d984af1879d8f36aedf4df4b13344f41dfdb3f3"
+}

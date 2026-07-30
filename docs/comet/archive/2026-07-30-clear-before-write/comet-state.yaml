@@ -1,0 +1,22 @@
+schema: comet.native.v3
+minimum_runtime_version: 3
+revision: 5
+name: clear-before-write
+language: zh-CN
+phase: archive
+brief: brief.md
+approval: confirmed
+approved_contract_hash: 1653cbae58f45ae78955380417d19446cb26e2e333b25ea390789102652ce8b6
+spec_changes:
+  - capability: clear-before-write
+    operation: create
+    source: specs/clear-before-write/spec.md
+    base_hash: null
+verification_result: pass
+verification_report: verification.md
+implementation_scope: runtime/evidence/scopes/991121548ebdb886275a2554b5a3433bd3c6782bf2133e9fd686dd7593f6ae09.json
+verification_evidence: runtime/evidence/verifications/b6e4ff36a84efea41692162a1d984af1879d8f36aedf4df4b13344f41dfdb3f3.json
+partial_allowance: null
+archived: true
+created_at: 2026-07-30
+run_id: a0d336fe-31bb-4984-b90b-e4c940005942

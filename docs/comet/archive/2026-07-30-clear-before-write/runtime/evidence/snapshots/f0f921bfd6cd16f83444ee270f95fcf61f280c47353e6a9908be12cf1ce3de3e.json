@@ -1,0 +1,1035 @@
+{
+  "schema": "comet.native.content-snapshot-projection.v1",
+  "origin": "change-created",
+  "capture": {
+    "provider": "git"
+  },
+  "complete": true,
+  "limits": {
+    "maxFiles": 10000,
+    "maxFileBytes": 268435456,
+    "maxTotalBytes": 268435456,
+    "maxManifestBytes": 1048576,
+    "maxDurationMs": 60000
+  },
+  "policy": {
+    "schema": "comet.native.snapshot-policy.v1",
+    "include": [
+      "**/*"
+    ],
+    "exclude": [],
+    "hash": "cc34dce5671bc1aefad09b658911a71d0434a26a1fbb4d8ba10de57b316f1f2f"
+  },
+  "entries": [
+    {
+      "path": ".agents/skills/comet-any/SKILL.md",
+      "hash": "49d907f2813e5912159022d0c58d5db9c43843f70f655b527cd4026cea924245",
+      "size": 7986,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/authored-zone-example.md",
+      "hash": "440f1e4ef3f9ba2404110ed0a220492b0c902e5f4ed8a0346be69eedaf2e6a08",
+      "size": 8362,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/authoring-subagents.md",
+      "hash": "6fbbee8ceb9c3fd7844e9d9f9336f8cbc1e3d79b7f318120498d23eb35512b11",
+      "size": 6534,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/bundle-authoring.md",
+      "hash": "5c3199221e608b20f70e4ebc06c44b1a82b848af3740c069aa1c8a29ee77e500",
+      "size": 6432,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/eval-provider.md",
+      "hash": "5998c9588c18dc52413f73a7b2ed50d28081e682f2a28b4ba44018c448d61e5b",
+      "size": 3218,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/pause-points-author.md",
+      "hash": "543a34062573b5e6f8c47e37650cb450cf81edde4c618ef346f4fc079a076f75",
+      "size": 4515,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/reference-author.md",
+      "hash": "6ded3e85ef29003236a78d82bed92100f851e1928857bc7ae29c2258ff7cc733",
+      "size": 3273,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/script-author.md",
+      "hash": "c54904e095445b02ba8ef0e6ca21253aa980193a7feaf7c715b1eea85550b4aa",
+      "size": 3785,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/skill-core-author.md",
+      "hash": "84ef68efec0e7b708f09ce5988575a087b63089b38849ef394c70ed3db66f895",
+      "size": 7302,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/skill-reviewer.md",
+      "hash": "9e3fd0743297f1bc8d196ffcdb1704c4bdfc6c08ff14b2a05b7340c6b1c7f013",
+      "size": 6777,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-any/reference/subagents/workflow-entry-author.md",
+      "hash": "cef96c63ec69966719c7a3059abf39a358bd610ba75153b98978ab08fdc4083f",
+      "size": 6427,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/SKILL.md",
+      "hash": "7182d95ab2ee74916fc9d666339f5d40b7027002130546334a77327361bfa87a",
+      "size": 23620,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/reference/artifacts.md",
+      "hash": "3342cf0e73212a28408b193cb65fb0e3ea3604eea397ca2d38b3653f8244e079",
+      "size": 14312,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/reference/commands.md",
+      "hash": "f54caf112db3203e1b98511c915036e961c7cc5107e18e72a0599516d43244e6",
+      "size": 8938,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/reference/recovery.md",
+      "hash": "eeee898d3b8c6a32c1e9bb0ff4179015b28045f169c51c9d396ba7037720b641",
+      "size": 12069,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/scripts/comet-native-hook-guard.mjs",
+      "hash": "819de5cb6b2e32e79e6978988b50083a3faf2247683ff09d57d335883752c19d",
+      "size": 145,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet-native/scripts/comet-native-runtime.mjs",
+      "hash": "ea4476965f04a81dc1c4d7868c90bae4ca91d98cebabf3d684d5ce0f3441649d",
+      "size": 1145894,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet/SKILL.md",
+      "hash": "7a7262b67bc15afcd14d246243db9e6e7713988bbc8be6bee06f6f610b549329",
+      "size": 1343,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet/scripts/comet-entry-runtime.mjs",
+      "hash": "d9f03607329ec1d58b668d86d5e175b589b401e92d294d68101aaf1afbb7b6c9",
+      "size": 289020,
+      "type": "file"
+    },
+    {
+      "path": ".agents/skills/comet/scripts/comet-hook-router.mjs",
+      "hash": "ef8f37e3267c8753bf095c1c95718e425a69102884f6cebefe066acd0d9b3d1b",
+      "size": 386166,
+      "type": "file"
+    },
+    {
+      "path": ".claude/commands/opsx/apply.md",
+      "hash": "3b96cfe79361c7f5ef6e289b2f96d7b6fc4085ec2946ef0ec750250403e80a0e",
+      "size": 5047,
+      "type": "file"
+    },
+    {
+      "path": ".claude/commands/opsx/archive.md",
+      "hash": "766067a3c4fce707a0966db0d81e7485d7897c88e79242c4c75c2fb73b2a2a23",
+      "size": 5532,
+      "type": "file"
+    },
+    {
+      "path": ".claude/commands/opsx/explore.md",
+      "hash": "7a6ffcd95a55771469f1c4278e144c3eb2d65390b724b7bec590ceb3c914d7c2",
+      "size": 6851,
+      "type": "file"
+    },
+    {
+      "path": ".claude/commands/opsx/propose.md",
+      "hash": "b856e4c2bf906451a3d4d48956d9c79cdc7db2548ea2d1b7fbec80eda7d7c683",
+      "size": 4638,
+      "type": "file"
+    },
+    {
+      "path": ".claude/commands/opsx/sync.md",
+      "hash": "e97847e845c8b7d4a4f010db3aa59eb387b231507947f39da32e40b52a5159f6",
+      "size": 4658,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/openspec-apply-change/SKILL.md",
+      "hash": "da3d97f3ea482cca969981a2079ce7f906ccb4a892728f07bf72f354035d951a",
+      "size": 5225,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/openspec-archive-change/SKILL.md",
+      "hash": "0526054ec891a8a0c0cd0e19a285f285aa111112f2480a3ab365f9bba18a2b9c",
+      "size": 4581,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/openspec-explore/SKILL.md",
+      "hash": "fb359559d93095c81a57760c7739ffbd6d618a03d1810503515f8ae2b5054cd0",
+      "size": 10829,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/openspec-propose/SKILL.md",
+      "hash": "ead4a7b7077ff08607b883ce045b31de3d78189432846c58ae80675eeac5033b",
+      "size": 4866,
+      "type": "file"
+    },
+    {
+      "path": ".claude/skills/openspec-sync-specs/SKILL.md",
+      "hash": "9c74dad096467f982806ccf33e213f459890e0b79af1f69f6e9f1e790bb2fccf",
+      "size": 4787,
+      "type": "file"
+    },
+    {
+      "path": ".codex/hooks.json",
+      "hash": "2531a856101c804d290337338c28dd4dce4d8ca1330ed41134585bf72a7acca1",
+      "size": 413,
+      "type": "file"
+    },
+    {
+      "path": ".codex/rules/comet-workflow-guard.md",
+      "hash": "d670067cd1c1573b4c655de3ec553252f20126d3dba3d187a78717c2c87cb3c8",
+      "size": 2196,
+      "type": "file"
+    },
+    {
+      "path": ".codex/skills/openspec-apply-change/SKILL.md",
+      "hash": "da3d97f3ea482cca969981a2079ce7f906ccb4a892728f07bf72f354035d951a",
+      "size": 5225,
+      "type": "file"
+    },
+    {
+      "path": ".codex/skills/openspec-archive-change/SKILL.md",
+      "hash": "0526054ec891a8a0c0cd0e19a285f285aa111112f2480a3ab365f9bba18a2b9c",
+      "size": 4581,
+      "type": "file"
+    },
+    {
+      "path": ".codex/skills/openspec-explore/SKILL.md",
+      "hash": "fb359559d93095c81a57760c7739ffbd6d618a03d1810503515f8ae2b5054cd0",
+      "size": 10829,
+      "type": "file"
+    },
+    {
+      "path": ".codex/skills/openspec-propose/SKILL.md",
+      "hash": "ead4a7b7077ff08607b883ce045b31de3d78189432846c58ae80675eeac5033b",
+      "size": 4866,
+      "type": "file"
+    },
+    {
+      "path": ".codex/skills/openspec-sync-specs/SKILL.md",
+      "hash": "9c74dad096467f982806ccf33e213f459890e0b79af1f69f6e9f1e790bb2fccf",
+      "size": 4787,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/SKILL.md",
+      "hash": "6cec1c00e1d890a41a2a600814bc765b6e264d9800742a1e3dff0441da9016c8",
+      "size": 10520,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/charts.csv",
+      "hash": "b754c0efffcf54cb889114a9314be1d5af6ceebe65c4c436d713b52018e752c9",
+      "size": 7654,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/colors.csv",
+      "hash": "4cc0df2785f340b8bd0ace50bd4068dc13a7c4c6fa4d9d2723271244ce904614",
+      "size": 9713,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/icons.csv",
+      "hash": "351fe61ba45b8146c66de6ea7d67297654639d79a94f537b4d0bad570058c28f",
+      "size": 13384,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/landing.csv",
+      "hash": "010e1e46db271b94e0af6f18973bea86ddba62feeccd62aeeaa6ed40e2ae2db1",
+      "size": 14390,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/products.csv",
+      "hash": "5359e3037dcb84e99c792ea13dd44f5b78ab6a53557afb309cf19140512aaf5b",
+      "size": 29790,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/react-performance.csv",
+      "hash": "904c8afcda229629545912dde0e8ac37503757131f0169f80b016f1f58c4fd3f",
+      "size": 14822,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/astro.csv",
+      "hash": "ad18dae3ab6d148d37d144592df80dc1825b6c9e86d9d2d68fdda77434206a37",
+      "size": 11868,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/flutter.csv",
+      "hash": "e470e6bc2bcd8562667cc764d1e1afb0be0a30ca4dc9ec12fa18b19d46f156bd",
+      "size": 10469,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv",
+      "hash": "1f004891dd189f6bc2a7717401e3100244326e7e2f3963a79bf7b2349d85e091",
+      "size": 11361,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/jetpack-compose.csv",
+      "hash": "6c8fd4b0391c342c12b0af15610cd5becbeccaef0bbe8dcfc01d928c3195d93e",
+      "size": 8195,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/nextjs.csv",
+      "hash": "06a8e8c13bd44696c6ebb4cb6c4d8dea440e3de8cce77616512529ed29258f0c",
+      "size": 12546,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/nuxt-ui.csv",
+      "hash": "05d6e74501b2b6a636faed32450622759f49a5bcafad971f5f4e7eba0eb7be71",
+      "size": 14010,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/nuxtjs.csv",
+      "hash": "f7a3f2d9542856d00199f85c6c023b7c284cc698e2e6e12d61afce2edacb24d6",
+      "size": 16539,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/react-native.csv",
+      "hash": "a08ca77fcf6b6d9531982dce465366296013bfcf12d2938ac72ad57cf0c4f085",
+      "size": 10035,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/react.csv",
+      "hash": "b6e3eb0e4c9c01bd00ffb951d5ca224a19d488b4544c75436f48cf92ff12bf45",
+      "size": 13016,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/shadcn.csv",
+      "hash": "395c2e415ef6f48a474acccdc8eb2c7258a6ed751a5037ba171a2d8823e02ded",
+      "size": 15921,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/svelte.csv",
+      "hash": "bc8d158994a8bdf412830a9dd5e5a5534edd2f367a6e50e0ebd4d76f592dfa3f",
+      "size": 11063,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/swiftui.csv",
+      "hash": "e87cb9eee208bb753bdab96d4a261c7f830c4317ee90ec098316b248fc32be85",
+      "size": 10872,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/stacks/vue.csv",
+      "hash": "9b793c3f4eec85f77a758c09322f2b62f3b3ca549bb713ccf0849ef885934395",
+      "size": 11056,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/styles.csv",
+      "hash": "ad3c3236134d833bda01a2faf31ddeaaa1dbd5005fa430dec571fa91b26e5fea",
+      "size": 96553,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/typography.csv",
+      "hash": "64695e05ac335ba534aff396c4ba9241c642f80ea53b424251d2669b71c4772b",
+      "size": 31877,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/ui-reasoning.csv",
+      "hash": "58fc52fff69f62709f8c7dd460de6f6693699ea820f24287f3301a427c2b554e",
+      "size": 31071,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/ux-guidelines.csv",
+      "hash": "1870ee048f2a2bdd60709f8f7adf7f3b6dcad560bc005c8b2915a8ac8639820d",
+      "size": 18766,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/data/web-interface.csv",
+      "hash": "10bfc24e09a6a15db8309e6ef9b6881e1d4af97dffb7c99418aefb8e30df7d54",
+      "size": 7472,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/scripts/core.py",
+      "hash": "5459d1f04eea03dfb913742d0c03edc5065ac67f6227e4807fa87699662588cb",
+      "size": 10227,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/scripts/design_system.py",
+      "hash": "4da1d341f3c7749df51b51db4a543a48a427c3c746eb0e9882a1ab86acf3bb54",
+      "size": 43614,
+      "type": "file"
+    },
+    {
+      "path": ".cursor/skills/ui-ux-pro-max/scripts/search.py",
+      "hash": "a449e57060ef5134e98e62fd11f6e240153afd68c27dab89cbb72a3ce55f1498",
+      "size": 5478,
+      "type": "file"
+    },
+    {
+      "path": ".editorconfig",
+      "hash": "d4ada1466214faa32650a69394ba60022b3299f53d5ab400bb62e1795ba2f7fd",
+      "size": 934,
+      "type": "file"
+    },
+    {
+      "path": ".github/release.yml",
+      "hash": "94b6bb2f5a393a4ad79da8976431d5d7f19ebe4c4e040ccc59b6305e29c5a392",
+      "size": 262,
+      "type": "file"
+    },
+    {
+      "path": ".github/workflows/pages.yml",
+      "hash": "7549d21c7bc4b482778929cf0593c75c13986f681b64921898349de6aa943d80",
+      "size": 1631,
+      "type": "file"
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "hash": "a64bbb20918508cdd184078116487ac823a22efbee3304902c6e1739e553efad",
+      "size": 1380,
+      "type": "file"
+    },
+    {
+      "path": ".gitignore",
+      "hash": "2004ee5cf00b1554464959a1e3e882a88a957a82e7321c4f4dfd56112ecc033d",
+      "size": 302,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/SKILL.md",
+      "hash": "49d907f2813e5912159022d0c58d5db9c43843f70f655b527cd4026cea924245",
+      "size": 7986,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/authored-zone-example.md",
+      "hash": "440f1e4ef3f9ba2404110ed0a220492b0c902e5f4ed8a0346be69eedaf2e6a08",
+      "size": 8362,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/authoring-subagents.md",
+      "hash": "6fbbee8ceb9c3fd7844e9d9f9336f8cbc1e3d79b7f318120498d23eb35512b11",
+      "size": 6534,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/bundle-authoring.md",
+      "hash": "5c3199221e608b20f70e4ebc06c44b1a82b848af3740c069aa1c8a29ee77e500",
+      "size": 6432,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/eval-provider.md",
+      "hash": "5998c9588c18dc52413f73a7b2ed50d28081e682f2a28b4ba44018c448d61e5b",
+      "size": 3218,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/pause-points-author.md",
+      "hash": "543a34062573b5e6f8c47e37650cb450cf81edde4c618ef346f4fc079a076f75",
+      "size": 4515,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/reference-author.md",
+      "hash": "6ded3e85ef29003236a78d82bed92100f851e1928857bc7ae29c2258ff7cc733",
+      "size": 3273,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/script-author.md",
+      "hash": "c54904e095445b02ba8ef0e6ca21253aa980193a7feaf7c715b1eea85550b4aa",
+      "size": 3785,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/skill-core-author.md",
+      "hash": "84ef68efec0e7b708f09ce5988575a087b63089b38849ef394c70ed3db66f895",
+      "size": 7302,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/skill-reviewer.md",
+      "hash": "9e3fd0743297f1bc8d196ffcdb1704c4bdfc6c08ff14b2a05b7340c6b1c7f013",
+      "size": 6777,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-any/reference/subagents/workflow-entry-author.md",
+      "hash": "cef96c63ec69966719c7a3059abf39a358bd610ba75153b98978ab08fdc4083f",
+      "size": 6427,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/SKILL.md",
+      "hash": "7182d95ab2ee74916fc9d666339f5d40b7027002130546334a77327361bfa87a",
+      "size": 23620,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/reference/artifacts.md",
+      "hash": "3342cf0e73212a28408b193cb65fb0e3ea3604eea397ca2d38b3653f8244e079",
+      "size": 14312,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/reference/commands.md",
+      "hash": "f54caf112db3203e1b98511c915036e961c7cc5107e18e72a0599516d43244e6",
+      "size": 8938,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/reference/recovery.md",
+      "hash": "eeee898d3b8c6a32c1e9bb0ff4179015b28045f169c51c9d396ba7037720b641",
+      "size": 12069,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/scripts/comet-native-hook-guard.mjs",
+      "hash": "819de5cb6b2e32e79e6978988b50083a3faf2247683ff09d57d335883752c19d",
+      "size": 145,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet-native/scripts/comet-native-runtime.mjs",
+      "hash": "ea4476965f04a81dc1c4d7868c90bae4ca91d98cebabf3d684d5ce0f3441649d",
+      "size": 1145894,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet/SKILL.md",
+      "hash": "7a7262b67bc15afcd14d246243db9e6e7713988bbc8be6bee06f6f610b549329",
+      "size": 1343,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet/scripts/comet-entry-runtime.mjs",
+      "hash": "d9f03607329ec1d58b668d86d5e175b589b401e92d294d68101aaf1afbb7b6c9",
+      "size": 289020,
+      "type": "file"
+    },
+    {
+      "path": ".kimi-code/skills/comet/scripts/comet-hook-router.mjs",
+      "hash": "ef8f37e3267c8753bf095c1c95718e425a69102884f6cebefe066acd0d9b3d1b",
+      "size": 386166,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "hash": "19de3a2cde573b3d423b0ae558997432e0b6ce3697236b5f176e3d7347ecc36b",
+      "size": 6768,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "hash": "2a4229d1057af8df363eb3db176b447358aeceb25bcd8103222e3ff9ee90db78",
+      "size": 1611,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "hash": "191de8a43146a5f11c9cea2e9037f39979d5b8a75ffdf6bef659403c50779148",
+      "size": 3324,
+      "type": "file"
+    },
+    {
+      "path": "SPEC.md",
+      "hash": "8441b0fd4799e54bab40bd0ac8a4a217de5c3c6f8add89fdaf55509c07030e94",
+      "size": 10163,
+      "type": "file"
+    },
+    {
+      "path": "TO-DO.md",
+      "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/index.html",
+      "hash": "106589162a4f6a747780594092526cb5f91e6d36963fb6cd2b84a86f3d857b0d",
+      "size": 352,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/package.json",
+      "hash": "04c7647733b4c3e1a3ec83147964ad2785c0890ac5574ea3eda048ff0a5c89f3",
+      "size": 498,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/public/1781753154937e.png",
+      "hash": "032ff067afe1e5458d19a20f6458d140483cde58447b1863e631f9c41c900b91",
+      "size": 3888358,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/public/extension-screenshot.png",
+      "hash": "9d580831536f971d57e0122dd845a0fb353167242c535aa615bcbddebc8e378a",
+      "size": 69026,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/src/App.tsx",
+      "hash": "509cb4c2d69eda3ee4afa345a8fbe3a0b242889a8e792e7d398340d50ef5db11",
+      "size": 24604,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/src/main.tsx",
+      "hash": "2d098f4fbf3d0bdc746684ce67f261209835a18203a13690e51674717bdea99a",
+      "size": 256,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/src/styles.css",
+      "hash": "626049d9b200d4ce72abbc186b57c505126efdfd53c1adf5aacf18e5b75829e6",
+      "size": 18725,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/src/vite-env.d.ts",
+      "hash": "bf144e3cdae616e27b064c8c2b94b14525e220fb3facc4cb4884d21b65eb5aa5",
+      "size": 39,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/tsconfig.json",
+      "hash": "fb2dc5c60b94691a7705b192d18d2262887b537dd525c8e1f23602d9ddd772af",
+      "size": 487,
+      "type": "file"
+    },
+    {
+      "path": "apps/site/vite.config.ts",
+      "hash": "ab0bea23e5cb8e4e30475430c0ade8b4afaf5b5357cb3f4f89c46b2c6e61c2a7",
+      "size": 206,
+      "type": "file"
+    },
+    {
+      "path": "components.json",
+      "hash": "02a5886cd19f7672c9c68fd0a348fe2243f814d9a0a867e8a122d8191f67ee28",
+      "size": 456,
+      "type": "file"
+    },
+    {
+      "path": "context/index.md",
+      "hash": "12fd45d3dde8d64f83ca341eb8ec4e056b92bd9e17051e54bea39283f5a039ca",
+      "size": 1146,
+      "type": "file"
+    },
+    {
+      "path": "context/log.md",
+      "hash": "58a02cbd4076d6bbdffafb3929b94c6cc981985f8330610af9affe482cc265d7",
+      "size": 300,
+      "type": "file"
+    },
+    {
+      "path": "context/project.md",
+      "hash": "fc3d1da51385cb9c748e97cfa4624bdee2ad615e9d351f578bb11d197062c633",
+      "size": 2578,
+      "type": "file"
+    },
+    {
+      "path": "context/rules.md",
+      "hash": "b5890474196419e725f792a83ad26c09b87bed301c9d8568670dc1d56d6fc573",
+      "size": 1857,
+      "type": "file"
+    },
+    {
+      "path": "context/specs/README.md",
+      "hash": "1b711a63031ab65de677a729a43b87766dbabb4278d51fcb211e7729204b3650",
+      "size": 762,
+      "type": "file"
+    },
+    {
+      "path": "openspec/changes/archive/2026-06-10-read-history-by-storage-keys/.openspec.yaml",
+      "hash": "5ada458f25cd6e260a7ac3deb87a5ba5d046aabf964c53260ae6cf7bcb8a5d12",
+      "size": 40,
+      "type": "file"
+    },
+    {
+      "path": "openspec/changes/archive/2026-06-10-read-history-by-storage-keys/design.md",
+      "hash": "d7447ae42b324a22c09a9bf9f2e05ce94427650d47d4659bb4300b8208dc455f",
+      "size": 3904,
+      "type": "file"
+    },
+    {
+      "path": "openspec/changes/archive/2026-06-10-read-history-by-storage-keys/proposal.md",
+      "hash": "c6d16b0f8ac7590fe1bacd259387ead65feca7978aead33ed3f77a1dd518bdc7",
+      "size": 1883,
+      "type": "file"
+    },
+    {
+      "path": "openspec/changes/archive/2026-06-10-read-history-by-storage-keys/specs/read-history-storage-keys/spec.md",
+      "hash": "b239dfbeb7b23e36c328be108b8023369e927273c5f3fa45234143e2bc38c0c2",
+      "size": 3774,
+      "type": "file"
+    },
+    {
+      "path": "openspec/changes/archive/2026-06-10-read-history-by-storage-keys/tasks.md",
+      "hash": "6bf0863b9f66bdfeda8ec6eac7764670df909fd86075ac1e9c2c65d49cc30b9b",
+      "size": 1748,
+      "type": "file"
+    },
+    {
+      "path": "openspec/config.yaml",
+      "hash": "7f64d2448e1c83ffa6f2f3398b742fb5f2d4d3ea47b2c540a9076484977026b4",
+      "size": 573,
+      "type": "file"
+    },
+    {
+      "path": "openspec/specs/read-history-storage-keys/spec.md",
+      "hash": "46674ccf6d6a9f13a4e3cf184a7ce38f8273b365b461911ce1bd9f99cb4a0e2f",
+      "size": 3952,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "hash": "97b83b632c38e37cc7d733105d5391dc76b1215f0d0a4b492dd5957fb9dbe1e8",
+      "size": 1320,
+      "type": "file"
+    },
+    {
+      "path": "plans/扩展版本更新提醒_4def5718.plan.md",
+      "hash": "3bfa7b6ef18c5fb272f8eaf7fbc4c6815f77012a3c4abb75cb96113c19bdec78",
+      "size": 3370,
+      "type": "file"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "hash": "1f10c1c383b93fae5cad26a820dab8ffce762b0bf8f910502c1c1113a59e028c",
+      "size": 166611,
+      "type": "file"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "hash": "5d26409f67240641cb4b51ac8d94a7df2596696ee06a924bde5cbfe684dd1f2a",
+      "size": 31,
+      "type": "file"
+    },
+    {
+      "path": "public/Snipaste_2026-06-24_09-33-03.png",
+      "hash": "8a4ef461c3ca3fac9c88ee0bdc84819b00f8c377c6980f81ba5992162f04f84c",
+      "size": 81747,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/128.png",
+      "hash": "7c77899f106d9dcd7a47cb3b869367a4f0507f463d0b31c997f168132a96ffa5",
+      "size": 31683,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/16.png",
+      "hash": "26f6bfafea09cc0e96bbab3957a5c12a5f9a76da8290a06e294b4aff5b76c135",
+      "size": 922,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/256.png",
+      "hash": "aca717994f662e28640ad169793777fab321b084b8a80f65b810b442e6c1d2fc",
+      "size": 94781,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/32.png",
+      "hash": "9ef90e81f095d74dbbb2bcf20856d0e42c62237a95091a350b779dd97e6b06f3",
+      "size": 2945,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/48.png",
+      "hash": "f3096cf4e1fb8d381a55c34f7dacda7c5467379f7d305783d11a9a17145aeb97",
+      "size": 5895,
+      "type": "file"
+    },
+    {
+      "path": "public/icons/64.png",
+      "hash": "15277501f4adc70fdfe5e23dc94716450e8598ef8ba7e0a13645eb1ef30bc859",
+      "size": 9824,
+      "type": "file"
+    },
+    {
+      "path": "public/wxt.svg",
+      "hash": "e8b659fcd30b4f55427597cbcdcac33c9946d2e5f9e27ed78d6c5697a1d058e8",
+      "size": 1072,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__/historySearch.test.ts",
+      "hash": "a5e268cc892aea37f2147551d9db9e0318f6eb1566966e8003a45d51f512b0e3",
+      "size": 750,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__/identity.test.ts",
+      "hash": "902420274d7edce98343146475c6df5ecae67a623692d72abe81821ecb35bf84",
+      "size": 2874,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__/readHistory.test.ts",
+      "hash": "89ea0ecc56113476b4db11268a810e1f3bb9e7db5455b2ffb2a5d95ad29ff58b",
+      "size": 6537,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__/utils.test.ts",
+      "hash": "34693b1a60eba049d7f2132188a2b46aa5d7f394a1a68f45e7f84d6faae505f4",
+      "size": 514,
+      "type": "file"
+    },
+    {
+      "path": "src/assets/react.svg",
+      "hash": "9d72e876c70d7c7d4cbfe6c315747b66308176577329d2dc59b75191bdc21a4e",
+      "size": 4127,
+      "type": "file"
+    },
+    {
+      "path": "src/assets/tailwind.css",
+      "hash": "c85cec31d6e2a4298c9d5c14c6cad3402c511c70eb2fed33fe0589f1020ca312",
+      "size": 4995,
+      "type": "file"
+    },
+    {
+      "path": "src/components/Empty/index.tsx",
+      "hash": "e57f2fb808ff132a3db6b62714bc5a9c14dbb95b26667f8074412e4e340215c2",
+      "size": 763,
+      "type": "file"
+    },
+    {
+      "path": "src/components/Table/index.tsx",
+      "hash": "50ae1f0086f8cc04c72e691c0c93a81aef375f157062ebb278b2f5153f10f84f",
+      "size": 2293,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "hash": "8116b8529db6dc4e3c04bd5ebdd223a38535dcc737830d12ec4b290433d469d8",
+      "size": 2142,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/card.tsx",
+      "hash": "e3d45105adea227a739796a5889454ce79a1c4d8555383babf44b00d9970f150",
+      "size": 1975,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/empty.tsx",
+      "hash": "584b491f9eb69f8041b3d3732a4d139f5af01de19a00b7a97656c7af7a78716a",
+      "size": 2396,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/input.tsx",
+      "hash": "56b7fd30208addbcc2468cfda4f5bc0a55342211deaab61ee35b1c352b1622f1",
+      "size": 962,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/label.tsx",
+      "hash": "70d2b90324e521926a48678ce5329446caaed155c6e5954a454499d5b67a014c",
+      "size": 597,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/switch.tsx",
+      "hash": "b88a915ed778d5b6b47aeb08114595c9866ff36d2bd9848f06de8f861f39a224",
+      "size": 1163,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/table.tsx",
+      "hash": "95e3ef5db88b3bbfb68eed12f341fb942e40ca815f4342e1d5dbc8c8d47c783d",
+      "size": 2434,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/tabs.tsx",
+      "hash": "e38048e5d2b9bca1fa6276da5f19d72097188aff43b562a2ff17da66dde0aa2a",
+      "size": 1893,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "hash": "de4e9fb0fd8e8ed10ea2e475ffe202a922ffe77e3f3edb2c517b0781447ad1b4",
+      "size": 759,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/toast.tsx",
+      "hash": "a127ed6b98e724788a9d1ca1d986e3c1cb309e2ba9acc98a01262db02628c781",
+      "size": 3837,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/background.ts",
+      "hash": "3e3d17d929cd0b75b016a0ea6d2f61557225beb3ceb379171fd306330009bf18",
+      "size": 26966,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/content/index.ts",
+      "hash": "382cb100681dfdaac03d9a0a64af01ba8f4aeaff250df13d87c276ce490a547c",
+      "size": 1933,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/App.css",
+      "hash": "2122803f7cc4b0a1e7f56841751a0d8522ac1fa4d4fbbd30b45242682fb14530",
+      "size": 606,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/App.tsx",
+      "hash": "b05cbc6e5778076495d55c27862d489cd55f8976189faa0c01d2b1b42226ae70",
+      "size": 7243,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/ConfigTab.tsx",
+      "hash": "7c13b3169ac467617f6bd06b37c6777f6462d88ccb3272e4bd81967fa7d3e734",
+      "size": 5717,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/OperationTab.tsx",
+      "hash": "6c866c55e6a91ee6d9efed3c5616db9555fb4cc750f8cd9d357e0640904f5482",
+      "size": 25195,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/index.html",
+      "hash": "ae97939b7245819565ce45b461b6e405a4525d04e8d9e3ebd07b7c4a025ca7dc",
+      "size": 347,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/popup/main.tsx",
+      "hash": "9925670d0d7713e72c48462c9b69f966221ebb5fa778d937cbb3527f1881f29c",
+      "size": 251,
+      "type": "file"
+    },
+    {
+      "path": "src/entrypoints/read-local-storage.ts",
+      "hash": "9468151f768d6497fd52f808104fe47b8e42300b712ef84bd8c57a341bddc561",
+      "size": 297,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "hash": "7c8c3dfc0cdd370d44932828eb067ef771c8fe7996693221d5d4b90af6d54f2d",
+      "size": 166,
+      "type": "file"
+    },
+    {
+      "path": "src/types.ts",
+      "hash": "7e2ad7d163aa573171b922221c76446529f5df34140743f32aad5287bad74852",
+      "size": 6838,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/extension-storage-helpers.ts",
+      "hash": "04a3e90cf602ea0715b29796946f0a64e5cc7bf586f8277633717badc487b4b6",
+      "size": 7015,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/historySearch.ts",
+      "hash": "1e7e382796693af6b2d4a6378f649dd5cba336fd34c4eff3c870f0ea5a55bbd3",
+      "size": 1278,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/identity.ts",
+      "hash": "8209fc756fb858bc02a5e6290e17f96c31f79b2695696530356bed3a0db0b362",
+      "size": 4174,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/index.ts",
+      "hash": "3e2c979825494df7c5969654bb28891106112a229d8b81a6f2e4114df245ce06",
+      "size": 168,
+      "type": "file"
+    },
+    {
+      "path": "src/utils/readHistory.ts",
+      "hash": "a9871dc5c4150af9dd4062235f3171f82752297a2dea9a59107fcb9718c74097",
+      "size": 3419,
+      "type": "file"
+    },
+    {
+      "path": "test-checklist.md",
+      "hash": "cee56962860b11b1f3dbadded08ad39edcf64427b5418b40d574981febc3a09c",
+      "size": 5014,
+      "type": "file"
+    },
+    {
+      "path": "test-instructions.md",
+      "hash": "11fbdf8afe5606f89d1649bf5c9e88fbb1b292ab46d2a0394280c8bbd32e63f9",
+      "size": 3421,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "hash": "4b43f457597f3fd5a926b03779bb2af3304730b8cdaaeaf25f088c6ddca7db56",
+      "size": 199,
+      "type": "file"
+    },
+    {
+      "path": "wxt.config.ts",
+      "hash": "d82476c5306bc7df0dcbb52b09926cc8394fc2dea08005c3c3ab1fd1f962545c",
+      "size": 2244,
+      "type": "file"
+    }
+  ],
+  "omitted": [],
+  "omittedCount": 0
+}
