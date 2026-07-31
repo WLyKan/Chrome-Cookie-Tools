@@ -637,16 +637,15 @@ async function handleWriteStorage(
     // 写入前清空目标站点的全部 localStorage 和 Cookie
     bgLog("[StorageDevTools][background] handleWriteStorage: clearing existing data before write");
     try {
-      if (localEntries.length > 0) {
-        await executeStorageClearAll(tab.id, "local");
-        bgLog("[StorageDevTools][background] handleWriteStorage: localStorage cleared");
-      }
-      if (cookieItems.length > 0) {
-        const canClearCookies = await ensureEffectiveHostPermission(url);
-        if (canClearCookies) {
-          const clearResult = await removeAllCookiesOnUrl(targetUrl);
-          bgLog("[StorageDevTools][background] handleWriteStorage: cookies cleared", clearResult);
-        }
+      // 无条件清空 localStorage
+      await executeStorageClearAll(tab.id, "local");
+      bgLog("[StorageDevTools][background] handleWriteStorage: localStorage cleared");
+
+      // 无条件清空 Cookie（需要权限）
+      const canClearCookies = await ensureEffectiveHostPermission(url);
+      if (canClearCookies) {
+        const clearResult = await removeAllCookiesOnUrl(targetUrl);
+        bgLog("[StorageDevTools][background] handleWriteStorage: cookies cleared", clearResult);
       }
     } catch (clearError) {
       // 清空失败不阻止写入，降级为覆盖模式
@@ -751,49 +750,34 @@ async function handleClearStorage(
 
     const url = new URL(targetUrl);
 
-    const localKeys: string[] = [];
-    const sessionKeys: string[] = [];
-    const cookieNames: string[] = [];
-
-    for (const item of items) {
-      if (item.source === "localStorage") {
-        localKeys.push(item.key);
-      } else if (item.source === "sessionStorage") {
-        sessionKeys.push(item.key);
-      } else if (item.source === "cookie") {
-        cookieNames.push(item.key);
-      }
-    }
+    // 全量清空目标站点的 localStorage 和 Cookie
+    bgLog("[StorageDevTools][background] handleClearStorage: clearing all data");
 
     let okCount = 0;
     let failCount = 0;
     const cookieFailures: string[] = [];
 
-    if (localKeys.length > 0) {
-      const r = await executeStorageBatchRemove(tab.id, localKeys, "local");
-      okCount += r.ok.length;
-      failCount += r.fail.length;
+    try {
+      // 清空全部 localStorage
+      await executeStorageClearAll(tab.id, "local");
+      okCount++;
+      bgLog("[StorageDevTools][background] handleClearStorage: localStorage cleared");
+    } catch (e) {
+      failCount++;
+      bgWarnDev("[StorageDevTools][background] handleClearStorage: localStorage clear failed", e);
     }
 
-    if (sessionKeys.length > 0) {
-      const r = await executeStorageBatchRemove(tab.id, sessionKeys, "session");
-      okCount += r.ok.length;
-      failCount += r.fail.length;
-    }
-
-    if (cookieNames.length > 0) {
-      const canWriteCookies = await ensureEffectiveHostPermission(url);
-      if (!canWriteCookies) {
-        failCount += cookieNames.length;
-        for (const name of cookieNames) {
-          cookieFailures.push(`cookie ${name}: 权限被拒绝`);
-        }
-      } else {
-        const { successCount, errors } = await removeCookiesOnUrl(targetUrl, cookieNames);
-        okCount += successCount;
-        failCount += cookieNames.length - successCount;
-        cookieFailures.push(...errors);
-      }
+    // 清空全部 Cookie
+    const canClearCookies = await ensureEffectiveHostPermission(url);
+    if (!canClearCookies) {
+      failCount++;
+      cookieFailures.push("权限被拒绝，无法清除 Cookie");
+    } else {
+      const { successCount, errors } = await removeAllCookiesOnUrl(targetUrl);
+      okCount += successCount;
+      failCount += errors.length;
+      cookieFailures.push(...errors);
+      bgLog("[StorageDevTools][background] handleClearStorage: cookies cleared", { successCount, errors });
     }
 
     bgLog("[StorageDevTools][background] handleClearStorage: done", {
