@@ -48,6 +48,7 @@ import {
   extractIdentityFromStorageItems,
 } from "@/utils/identity";
 import upsertReadHistory, { getReadHistoryRecordId } from "@/utils/readHistory";
+import { buildWriteClearPlan } from "@/utils/writeFlow";
 
 function bgLog(...args: unknown[]) {
   if (import.meta.env.DEV) console.log(...args);
@@ -634,22 +635,40 @@ async function handleWriteStorage(
       cookieCount: cookieItems.length,
     });
 
-    // 写入前清空目标站点的全部 localStorage 和 Cookie
-    bgLog("[StorageDevTools][background] handleWriteStorage: clearing existing data before write");
-    try {
-      // 无条件清空 localStorage
-      await executeStorageClearAll(tab.id, "local");
-      bgLog("[StorageDevTools][background] handleWriteStorage: localStorage cleared");
+    const clearPlan = buildWriteClearPlan(items);
 
-      // 无条件清空 Cookie（需要权限）
-      const canClearCookies = await ensureEffectiveHostPermission(url);
-      if (canClearCookies) {
-        const clearResult = await removeAllCookiesOnUrl(targetUrl);
-        bgLog("[StorageDevTools][background] handleWriteStorage: cookies cleared", clearResult);
+    // 写入前清空目标站点的全部 localStorage、sessionStorage，以及待写入的 Cookie
+    bgLog("[StorageDevTools][background] handleWriteStorage: clearing existing data before write");
+    for (const area of clearPlan.storageAreas) {
+      try {
+        await executeStorageClearAll(tab.id, area);
+        bgLog(
+          `[StorageDevTools][background] handleWriteStorage: ${area}Storage cleared`,
+        );
+      } catch (clearError) {
+        bgWarnDev(
+          `[StorageDevTools][background] handleWriteStorage: ${area}Storage clear failed, fallback to overwrite`,
+          clearError,
+        );
       }
-    } catch (clearError) {
-      // 清空失败不阻止写入，降级为覆盖模式
-      bgWarnDev("[StorageDevTools][background] handleWriteStorage: clear failed, fallback to overwrite", clearError);
+    }
+
+    if (clearPlan.clearCookies) {
+      try {
+        const canClearCookies = await ensureEffectiveHostPermission(url);
+        if (canClearCookies) {
+          const clearResult = await removeAllCookiesOnUrl(targetUrl);
+          bgLog(
+            "[StorageDevTools][background] handleWriteStorage: cookies cleared",
+            clearResult,
+          );
+        }
+      } catch (clearError) {
+        bgWarnDev(
+          "[StorageDevTools][background] handleWriteStorage: cookie clear failed, fallback to overwrite",
+          clearError,
+        );
+      }
     }
 
     let okCount = 0;

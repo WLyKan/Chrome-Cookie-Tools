@@ -84,6 +84,9 @@ interface StorageConfig {
 - **只针对当前激活的标签页操作**
 - 读写操作手动触发，不自动同步
 - 强制覆盖目标已存在的数据
+- 写入前清空目标页全部 localStorage 和 sessionStorage；仅当待写数据包含 Cookie 时清空目标站点 Cookie
+- 写入成功 1 秒后刷新当前页面并关闭 Popup
+- 写入期间禁用写入按钮与历史写入项，避免重复提交
 
 ---
 

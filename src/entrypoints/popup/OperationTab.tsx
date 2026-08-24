@@ -13,6 +13,7 @@ import type { ReadHistoryRecord, StorageConfig, StoredUnifiedInfo, UnifiedStorag
 import { MessageType } from "@/types";
 import { normalizeReadHistoryHost } from "@/utils/readHistory";
 import { matchesHistoryQuery } from "@/utils/historySearch";
+import { scheduleWriteSuccessEffects } from "@/utils/writeFlow";
 import { Download, Upload, Database, Search, RotateCcw } from "lucide-react";
 
 /** 历史行内展示：各存储项 source:key=value，分号连接 */
@@ -152,6 +153,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
   };
 
   const handleClearStorage = async () => {
+    if (loading) return;
     if (!items.length) {
       toast.error("没有可清除的数据，请先读取");
       return;
@@ -284,6 +286,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
   };
 
   const handleActivateRecord = async (record: ReadHistoryRecord) => {
+    if (loading) return;
     const nextItems = record.items || [];
     setActiveHistoryId(record.id);
     setItems(nextItems);
@@ -306,6 +309,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
     itemsToWrite: UnifiedStorageItem[] = items,
     options?: { activatedRecord?: ReadHistoryRecord },
   ) => {
+    if (loading) return;
     if (itemsToWrite.length === 0) {
       toast.error("没有可写入的数据，请先读取");
       return;
@@ -315,6 +319,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
       return;
     }
 
+    let writeSucceeded = false;
     setLoading(true);
     try {
       console.log("[StorageDevTools][popup] handleWriteData: send", {
@@ -332,6 +337,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
       console.log("[StorageDevTools][popup] handleWriteData: response", response);
 
       if (response.success) {
+        writeSucceeded = true;
         const {
           okCount = 0,
           failCount = 0,
@@ -358,12 +364,13 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
           toast.success(`${activatedLabel}成功写入 ${okCount} 条数据`);
         }
 
-        // 写入完成后自动刷新当前标签页，使数据变更立即生效
-        if (currentTab?.id) {
-          browser.tabs.reload(currentTab.id);
-        }
-        // 写入成功后延迟 1 秒关闭 popup
-        setTimeout(() => window.close(), 1000);
+        // 写入成功 1 秒后刷新当前标签页，再关闭 Popup
+        scheduleWriteSuccessEffects({
+          reload: () => {
+            void browser.tabs.reload(currentTab.id);
+          },
+          close: () => window.close(),
+        });
       } else {
         toast.error(response.error || "写入失败");
       }
@@ -372,7 +379,9 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
       console.error("Error writing data:", error);
       loadSavedData();
     } finally {
-      setLoading(false);
+      if (!writeSucceeded) {
+        setLoading(false);
+      }
     }
   };
 
@@ -408,8 +417,9 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
           <button
             type="button"
             onClick={handleClearStorage}
+            disabled={loading}
             title="清除当前标签页的数据"
-            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive"
+            className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground/60 transition-colors duration-150 hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             <RotateCcw className="size-3" />
             清除
@@ -448,6 +458,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
                     <button
                       key={`search-${r.id}`}
                       type="button"
+                      disabled={loading}
                       onMouseDown={(e) => {
                         e.preventDefault();
                         setHistorySearchText(formatIdentityLabel(r.staffName, r.staffCode, r.sourceUrl));
@@ -455,7 +466,7 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
                         void handleActivateRecord(r);
                       }}
                       className={[
-                        "w-full min-w-0 border-b border-border/60 px-2.5 py-2 text-left transition-colors duration-150 last:border-b-0 hover:bg-violet-500/10",
+                        "w-full min-w-0 border-b border-border/60 px-2.5 py-2 text-left transition-colors duration-150 last:border-b-0 hover:bg-violet-500/10 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
                         active ? "bg-linear-to-r from-blue-500/12 to-violet-500/16 hover:from-blue-500/16 hover:to-violet-500/22" : "",
                       ].join(" ")}
                     >
@@ -557,9 +568,10 @@ export function OperationTab({ onMissingStorageKeys }: OperationTabProps) {
                   <button
                     key={r.id}
                     type="button"
+                    disabled={loading}
                     onClick={() => handleActivateRecord(r)}
                     className={[
-                      "w-full min-w-0 cursor-pointer border-b border-border/50 px-3 py-2.5 text-left transition-colors duration-200 last:border-b-0 motion-reduce:transition-none",
+                      "w-full min-w-0 cursor-pointer border-b border-border/50 px-3 py-2.5 text-left transition-colors duration-200 last:border-b-0 motion-reduce:transition-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
                       "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       active ? "bg-muted/70 ring-1 ring-inset ring-border/50" : "",
                     ].join(" ")}
