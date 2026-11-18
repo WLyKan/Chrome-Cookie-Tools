@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { UnifiedStorageItem } from "../types";
 import {
-  buildWriteClearPlan,
   scheduleWriteSuccessEffects,
+  WRITE_STORAGE_AREAS,
 } from "../utils/writeFlow";
 
 describe("write flow", () => {
@@ -11,30 +10,7 @@ describe("write flow", () => {
   });
 
   it("写入前始终清空 localStorage 和 sessionStorage", () => {
-    const items: UnifiedStorageItem[] = [
-      { source: "localStorage", key: "token", value: "value" },
-    ];
-
-    expect(buildWriteClearPlan(items).storageAreas).toEqual(["local", "session"]);
-  });
-
-  it("仅当待写数据包含有效 Cookie 项时清空 Cookie", () => {
-    const storageItems: UnifiedStorageItem[] = [
-      { source: "localStorage", key: "token", value: "local" },
-      { source: "sessionStorage", key: "ticket", value: "session" },
-    ];
-    const cookieItems: UnifiedStorageItem[] = [
-      ...storageItems,
-      {
-        source: "cookie",
-        key: "JSESSIONID",
-        value: "cookie",
-        cookieData: { name: "JSESSIONID", value: "cookie" },
-      },
-    ];
-
-    expect(buildWriteClearPlan(storageItems).clearCookies).toBe(false);
-    expect(buildWriteClearPlan(cookieItems).clearCookies).toBe(true);
+    expect(WRITE_STORAGE_AREAS).toEqual(["local", "session"]);
   });
 
   it("写入成功 1 秒后才刷新页面并关闭 Popup", () => {

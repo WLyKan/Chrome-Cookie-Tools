@@ -1,11 +1,11 @@
 # Clear Before Write 规范
 
-**版本：** 1.1
-**更新日期：** 2026-08-21
+**版本：** 1.2
+**更新日期：** 2026-11-18
 
 ## 行为描述
 
-写入数据时，自动清空目标站点的全部 localStorage 和 sessionStorage；仅当待写数据包含 Cookie 时清空目标站点 Cookie，确保页面存储状态一致，同时避免无 Cookie 写入场景触发不必要的站点权限申请。
+写入数据时，自动清空目标页的 localStorage 和 sessionStorage。Cookie 直接写入或覆盖，写入结果以回读为准。
 
 ## 触发条件
 
@@ -24,26 +24,24 @@
 - 使用 `store.clear()` 方法清空
 
 ### Cookie
-- 仅当待写数据包含有效 Cookie 项时执行
-- 清空目标站点同域的全部 Cookie
-- 使用 `browser.cookies.getAll({ url })` 获取所有 Cookie
-- 逐个调用 `browser.cookies.remove()` 删除
-- 待写数据只有 localStorage/sessionStorage 时，不检查或申请 Cookie 主机权限
+- 待写数据包含有效 Cookie 项时检查主机权限，按目标主机、名称和路径写入或覆盖对应 Cookie。
+- 独立的清除操作仍负责清空目标站点 Cookie。
 
 ## 执行顺序
 
 1. 清空目标站点的 localStorage
 2. 清空目标标签页的 sessionStorage
-3. 如待写数据包含 Cookie，检查主机权限并清空目标站点 Cookie
-4. 执行写入操作
+3. 写入待写数据。包含 Cookie 时检查主机权限，按目标协议适配属性，写入后回读确认
+4. 汇总成功和失败条数
 5. 写入成功 1 秒后刷新目标标签页并关闭 Popup
 
 ## 错误处理
 
-- localStorage、sessionStorage、Cookie 的清空相互独立；单项失败仍继续尝试其余清空项
+- localStorage 和 sessionStorage 的清空相互独立，单项失败仍继续尝试其余清空项
 - 清空失败不应阻止写入操作
 - 清空失败时降级为覆盖模式（现有行为）
 - 清空失败记录到控制台日志，不影响用户界面提示
+- Cookie 写入失败或回读不匹配时，通过现有写入流程提示对应条目。
 
 ## 不变规则
 
@@ -55,3 +53,4 @@
 ## 更新记录
 
 - 2026-08-21 / v1.1：增加 sessionStorage 全量清空；Cookie 改为按待写数据条件清空；页面刷新延迟到写入成功 1 秒后；写入相关按钮增加 loading 禁用。
+- 2026-11-18 / v1.2：Cookie 写入改为按目标协议适配属性、直接覆盖并回读确认。

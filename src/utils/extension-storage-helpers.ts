@@ -252,31 +252,69 @@ export async function removeCookiesOnUrl(
 }
 
 /**
- * 将多条 Cookie 写入浏览器（需已具备该 `targetUrl` 的主机权限）。
+ * 按目标页协议写入 Cookie，并回读验证（需已具备目标页主机权限）。
  *
- * @param targetUrl 写入时传给 `cookies.set` 的 URL
- * @param pageUrl 用于解析协议（决定默认 `secure`）
+ * @param pageUrl 目标页完整 URL
  * @param cookies 待写入的 Cookie 列表
  */
 export async function setCookiesOnUrl(
-  targetUrl: string,
   pageUrl: URL,
   cookies: CookieData[],
 ): Promise<{ successCount: number; errors: string[] }> {
   const errors: string[] = [];
   let successCount = 0;
+  const isHttp = pageUrl.protocol === "http:";
+  const isHttps = pageUrl.protocol === "https:";
   for (const cookie of cookies) {
     try {
-      await browser.cookies.set({
-        url: targetUrl,
+      if (
+        cookie.expirationDate !== undefined &&
+        cookie.expirationDate <= Date.now() / 1000
+      ) {
+        throw new Error("历史 Cookie 已过期，请重新读取");
+      }
+
+      let sameSite = cookie.sameSite ?? "lax";
+      if (isHttp && sameSite === "no_restriction") {
+        sameSite = "lax";
+      }
+      const secure =
+        !isHttp && (sameSite === "no_restriction" || (cookie.secure ?? isHttps));
+      const path = cookie.path || "/";
+      const httpOnly = cookie.httpOnly ?? false;
+      const written = await browser.cookies.set({
+        url: pageUrl.href,
         name: cookie.name,
         value: cookie.value,
-        path: cookie.path || "/",
-        secure: cookie.secure ?? pageUrl.protocol === "https:",
-        httpOnly: cookie.httpOnly ?? false,
-        sameSite: cookie.sameSite || "lax",
+        path,
+        secure,
+        httpOnly,
+        sameSite,
         expirationDate: cookie.expirationDate,
       });
+
+      // 按域名和路径回读，允许 Cookie 路径与当前页面路径不同。
+      const stored = await browser.cookies.getAll({
+        domain: pageUrl.hostname,
+        name: cookie.name,
+        path,
+        storeId: written?.storeId,
+      });
+      const verified = stored.some(
+        (entry) =>
+          entry.hostOnly &&
+          !entry.partitionKey &&
+          entry.domain === pageUrl.hostname &&
+          entry.name === cookie.name &&
+          entry.path === path &&
+          entry.value === cookie.value &&
+          entry.secure === secure &&
+          entry.httpOnly === httpOnly &&
+          entry.sameSite === sameSite,
+      );
+      if (!verified) {
+        throw new Error("写入后回读未找到匹配的 Cookie");
+      }
       successCount++;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);

@@ -13,3 +13,7 @@
 - 写入成功 1 秒后刷新当前页面并关闭 Popup
 - 写入相关按钮和历史项在 loading 期间禁用，防止重复写入
 - 同步更新 `SPEC.md` 与 `docs/comet/specs/clear-before-write/spec.md` v1.1
+
+## [2026-11-18] cookie-write-compatibility | Cookie 写入适配和回读
+
+- 根据目标页协议适配 Secure 和 SameSite。Cookie 写入前停止全量清空，逐条写入并回读确认。

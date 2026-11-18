@@ -26,7 +26,7 @@
 |------|------|
 | 读取Cookie | 从当前激活标签页读取指定key的Cookie |
 | 写入Cookie | 将读取的Cookie写入到当前激活标签页 |
-| 属性处理 | 保留Domain、Path、Expires、Secure、SameSite等属性 |
+| 属性处理 | 使用目标页主机，保留 Path、Expires、HttpOnly，按目标协议适配 Secure 和 SameSite |
 | 会话Cookie | 支持 Session Cookie（浏览器关闭即失效） |
 | HttpOnly Cookie | 检测到时提示用户手动处理 |
 
@@ -84,7 +84,9 @@ interface StorageConfig {
 - **只针对当前激活的标签页操作**
 - 读写操作手动触发，不自动同步
 - 强制覆盖目标已存在的数据
-- 写入前清空目标页全部 localStorage 和 sessionStorage；仅当待写数据包含 Cookie 时清空目标站点 Cookie
+- 写入前清空目标页全部 localStorage 和 sessionStorage。Cookie 按目标主机、名称和路径直接写入或覆盖。
+- HTTP 目标使用 `Secure=false`，将 `SameSite=None` 调整为 `Lax`。HTTPS 保留历史属性，`SameSite=None` 时启用 Secure。历史记录缺少 SameSite 时使用 `Lax`，缺少 Secure 时按目标协议决定。
+- Cookie 写入后回读核对目标主机、名称、路径、值及写入属性，匹配后计为成功。历史记录已过期时提示重新读取。
 - 写入成功 1 秒后刷新当前页面并关闭 Popup
 - 写入期间禁用写入按钮与历史写入项，避免重复提交
 
